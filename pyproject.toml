@@ -81,11 +81,11 @@ test = [
 machine_learning_model = "machine_learning_model.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/Machine Learning Model"
-Repository = "https://github.com/yourusername/Machine Learning Model"
-Issues = "https://github.com/yourusername/Machine Learning Model/issues"
-Documentation = "https://Machine Learning Model.readthedocs.io/"
-Changelog = "https://github.com/yourusername/Machine Learning Model/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/yourusername/Machine-Learning-Model"
+Repository = "https://github.com/yourusername/Machine-Learning-Model"
+Issues = "https://github.com/yourusername/Machine-Learning-Model/issues"
+Documentation = "https://Machine-Learning-Model.readthedocs.io/"
+Changelog = "https://github.com/yourusername/Machine-Learning-Model/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -95,9 +95,9 @@ where = ["src"]
 
 [tool.black]
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311']
-include = '\.pyi?$'
-extend-exclude = '''
+target-version = ["py38", "py39", "py310", "py311"]
+include = "\.pyi?$"
+extend-exclude = """
 /(
   # directories
   \.eggs
@@ -109,7 +109,7 @@ extend-exclude = '''
   | build
   | dist
 )/
-'''
+"""
 
 [tool.isort]
 profile = "black"
@@ -174,7 +174,7 @@ addopts = [
     "--durations=10",
 ]
 markers = [
-    "slow: marks tests as slow (deselect with '-m "not slow"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
     "smoke: marks tests as smoke tests",
@@ -200,8 +200,8 @@ exclude_lines = [
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
-    "class .*\bProtocol\):",
-    "@(abc\.)?abstractmethod",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
 ]
 show_missing = true
 precision = 2

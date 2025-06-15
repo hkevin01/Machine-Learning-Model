@@ -100,7 +100,7 @@ Types:
 Examples:
 ```
 feat(model): add transformer architecture
-fix(scripts): resolve project creation path issue  
+fix(scripts): resolve project creation path issue
 docs(readme): update installation instructions
 ```
 

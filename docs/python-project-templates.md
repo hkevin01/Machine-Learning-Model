@@ -130,7 +130,7 @@ my_project/
 ### Extensions
 
 - `--cirrus`: Cirrus CI support
-- `--gitlab`: GitLab CI support  
+- `--gitlab`: GitLab CI support
 - `--github-actions`: GitHub Actions
 - `--pre-commit`: Pre-commit hooks
 - `--cookiecutter`: Cookiecutter integration

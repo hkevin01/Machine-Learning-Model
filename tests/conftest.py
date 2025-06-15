@@ -37,11 +37,11 @@ def test_config():
 
 class MockResponse:
     """Mock HTTP response for testing."""
-    
+
     def __init__(self, json_data, status_code):
         self.json_data = json_data
         self.status_code = status_code
-    
+
     def json(self):
         return self.json_data
 
@@ -51,5 +51,5 @@ def mock_requests_get(monkeypatch):
     """Mock requests.get for testing."""
     def mock_get(*args, **kwargs):
         return MockResponse({"key": "value"}, 200)
-    
+
     monkeypatch.setattr("requests.get", mock_get)

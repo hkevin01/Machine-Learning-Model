@@ -29,21 +29,21 @@ def version_callback(value: bool):
 @app.callback()
 def main(
     version: Optional[bool] = typer.Option(
-        None, 
-        "--version", 
+        None,
+        "--version",
         "-v",
         callback=version_callback,
         is_eager=True,
         help="Show version and exit."
     ),
     verbose: bool = typer.Option(
-        False, 
-        "--verbose", 
+        False,
+        "--verbose",
         help="Enable verbose output."
     ),
     quiet: bool = typer.Option(
-        False, 
-        "--quiet", 
+        False,
+        "--quiet",
         help="Suppress output."
     ),
 ):
@@ -61,7 +61,7 @@ def run(
     config: Optional[str] = typer.Option(
         None,
         "--config",
-        "-c", 
+        "-c",
         help="Path to configuration file."
     ),
     dry_run: bool = typer.Option(
@@ -75,7 +75,7 @@ def run(
     """
     if dry_run:
         console.print("[yellow]DRY RUN MODE - No changes will be made[/yellow]")
-    
+
     try:
         run_main()
         console.print("[green]✅ Operation completed successfully![/green]")
@@ -92,11 +92,11 @@ def info():
     table = Table(title=f"machine_learning_model Information")
     table.add_column("Property", style="cyan")
     table.add_column("Value", style="green")
-    
+
     table.add_row("Package", "machine_learning_model")
     table.add_row("Version", __version__)
     table.add_row("Python", ">=3.8")
-    
+
     console.print(table)
 
 

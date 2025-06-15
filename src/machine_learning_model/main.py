@@ -37,15 +37,15 @@ def main():
     """Main entry point for the application."""
     setup_logging()
     logger.info("Starting machine_learning_model application")
-    
+
     try:
         logger.info("Hello from machine_learning_model!")
         # Your application logic here
-        
+
     except Exception as e:
         logger.error(f"Application error: {e}")
         sys.exit(1)
-    
+
     logger.info("Application completed successfully")
 
 

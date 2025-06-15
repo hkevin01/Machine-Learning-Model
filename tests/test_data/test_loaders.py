@@ -16,7 +16,13 @@ class TestDataLoaders:
         data = load_iris_dataset()
         assert isinstance(data, pd.DataFrame), "Iris dataset should be a DataFrame"
         assert not data.empty, "Iris dataset should not be empty"
-        assert set(data.columns) == {"sepal_length", "sepal_width", "petal_length", "petal_width", "species"}
+        assert set(data.columns) == {
+            "sepal_length",
+            "sepal_width",
+            "petal_length",
+            "petal_width",
+            "species",
+        }
 
     def test_load_wine_dataset(self):
         """Test loading the Wine dataset"""
@@ -28,9 +34,13 @@ class TestDataLoaders:
     def test_load_california_housing(self):
         """Test loading the California Housing dataset"""
         data = load_california_housing()
-        assert isinstance(data, pd.DataFrame), "California Housing dataset should be a DataFrame"
+        assert isinstance(
+            data, pd.DataFrame
+        ), "California Housing dataset should be a DataFrame"
         assert not data.empty, "California Housing dataset should not be empty"
-        assert "median_house_value" in data.columns, "California Housing dataset should have 'median_house_value' column"
+        assert (
+            "median_house_value" in data.columns
+        ), "California Housing dataset should have 'median_house_value' column"
 
     def test_load_invalid_file(self):
         """Test loading an invalid file"""

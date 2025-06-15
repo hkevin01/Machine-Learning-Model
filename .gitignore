@@ -179,3 +179,12 @@ config.ini
 # Logs
 logs/
 *.log
+# Large files and binaries
+*.exe
+*.dll
+*.dylib
+models/legacy/MODELS/
+.venv/
+*.pyc
+*.pyo
+# Large model files

@@ -2,14 +2,15 @@
 Command Line Interface for machine_learning_model
 """
 
-import typer
-from rich.console import Console
-from rich.table import Table
-from loguru import logger
 from typing import Optional
 
-from .main import main as run_main
+import typer
+from loguru import logger
+from rich.console import Console
+from rich.table import Table
+
 from .__init__ import __version__
+from .main import main as run_main
 
 app = typer.Typer(
     name="machine_learning_model",
@@ -22,7 +23,7 @@ console = Console()
 def version_callback(value: bool):
     """Show version and exit."""
     if value:
-        console.print(f"machine_learning_model version: {__version__}")
+        console.print(f"machine_learning_model version: { __version__}")
         raise typer.Exit()
 
 
@@ -34,18 +35,10 @@ def main(
         "-v",
         callback=version_callback,
         is_eager=True,
-        help="Show version and exit."
+        help="Show version and exit.",
     ),
-    verbose: bool = typer.Option(
-        False,
-        "--verbose",
-        help="Enable verbose output."
-    ),
-    quiet: bool = typer.Option(
-        False,
-        "--quiet",
-        help="Suppress output."
-    ),
+    verbose: bool = typer.Option(False, "--verbose", help="Enable verbose output."),
+    quiet: bool = typer.Option(False, "--quiet", help="Suppress output."),
 ):
     """
     machine_learning_model - A Python package for [description]
@@ -59,15 +52,10 @@ def main(
 @app.command()
 def run(
     config: Optional[str] = typer.Option(
-        None,
-        "--config",
-        "-c",
-        help="Path to configuration file."
+        None, "--config", "-c", help="Path to configuration file."
     ),
     dry_run: bool = typer.Option(
-        False,
-        "--dry-run",
-        help="Show what would be done without executing."
+        False, "--dry-run", help="Show what would be done without executing."
     ),
 ):
     """
@@ -80,7 +68,7 @@ def run(
         run_main()
         console.print("[green]✅ Operation completed successfully![/green]")
     except Exception as e:
-        console.print(f"[red]❌ Error: {e}[/red]")
+        console.print(f"[red]❌ Error: { e}[/red]")
         raise typer.Exit(code=1)
 
 

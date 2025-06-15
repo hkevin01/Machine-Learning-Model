@@ -3,14 +3,12 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Machine Learning Model"
+name = "machine-learning-model"
 version = "0.1.0"
-description = "A brief description of your project"
+description = "A comprehensive machine learning model implementation with supervised, unsupervised, and semi-supervised algorithms"
 readme = "README.md"
-license = {file = "LICENSE"}
-authors = [
-    {name = "Your Name", email = "your.email@example.com"},
-]
+license = { file = "LICENSE" }
+authors = [{ name = "Kevin", email = "kevin@example.com" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -56,12 +54,7 @@ ml = [
     "xgboost>=1.7.0",
     "lightgbm>=4.0.0",
 ]
-viz = [
-    "matplotlib>=3.7.0",
-    "seaborn>=0.12.0",
-    "plotly>=5.15.0",
-    "bokeh>=3.0.0",
-]
+viz = ["matplotlib>=3.7.0", "seaborn>=0.12.0", "plotly>=5.15.0", "bokeh>=3.0.0"]
 docs = [
     "sphinx>=7.1.0",
     "sphinx-rtd-theme>=1.3.0",
@@ -78,14 +71,14 @@ test = [
 ]
 
 [project.scripts]
-machine_learning_model = "machine_learning_model.cli:main"
+machine-learning-model = "machine_learning_model.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/Machine-Learning-Model"
-Repository = "https://github.com/yourusername/Machine-Learning-Model"
-Issues = "https://github.com/yourusername/Machine-Learning-Model/issues"
-Documentation = "https://Machine-Learning-Model.readthedocs.io/"
-Changelog = "https://github.com/yourusername/Machine-Learning-Model/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/hkevin01/Machine-Learning-Model"
+Repository = "https://github.com/hkevin01/Machine-Learning-Model"
+Issues = "https://github.com/hkevin01/Machine-Learning-Model/issues"
+Documentation = "https://machine-learning-model.readthedocs.io/"
+Changelog = "https://github.com/hkevin01/Machine-Learning-Model/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -96,20 +89,20 @@ where = ["src"]
 [tool.black]
 line-length = 88
 target-version = ["py38", "py39", "py310", "py311"]
-include = "\.pyi?$"
-extend-exclude = """
+include = "\\.pyi?$"
+extend-exclude = '''
 /(
   # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
+  \\.eggs
+  | \\.git
+  | \\.hg
+  | \\.mypy_cache
+  | \\.tox
+  | \\.venv
   | build
   | dist
 )/
-"""
+'''
 
 [tool.isort]
 profile = "black"
@@ -131,9 +124,9 @@ select = [
     "UP", # pyupgrade
 ]
 ignore = [
-    "E501",  # line too long, handled by black
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
+    "E501", # line too long, handled by black
+    "B008", # do not perform function calls in argument defaults
+    "C901", # too complex
 ]
 
 [tool.ruff.per-file-ignores]
@@ -179,11 +172,7 @@ markers = [
     "unit: marks tests as unit tests",
     "smoke: marks tests as smoke tests",
 ]
-filterwarnings = [
-    "error",
-    "ignore::UserWarning",
-    "ignore::DeprecationWarning",
-]
+filterwarnings = ["error", "ignore::UserWarning", "ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["src"]
@@ -200,8 +189,8 @@ exclude_lines = [
     "raise NotImplementedError",
     "if 0:",
     "if __name__ == .__main__.:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
+    "class .*\\\\bProtocol\\\\):",
+    "@(abc\\\\.)?abstractmethod",
 ]
 show_missing = true
 precision = 2

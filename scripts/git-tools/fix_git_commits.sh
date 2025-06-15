@@ -1,11 +1,13 @@
 #!/bin/bash
 # Fix Git Commit Issues Script
-# Resolves common git commit problems and staging issues (NO COMMIT MODE)
+# Resolves common git commit problems and staging issues
 
-set -e
+# Force all output to terminal
+exec > >(tee /dev/tty)
+exec 2>&1
 
-echo "🔧 Git Commit Fix Script (NO COMMIT MODE)"
-echo "========================================="
+# Enable debugging output
+set -x
 
 # Colors for output
 RED='\033[0;31m'
@@ -14,6 +16,11 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color sequence
+
+echo -e "${PURPLE}🔧 Git Commit Fix Script${NC}"
+echo -e "${BLUE}========================${NC}"
+echo -e "${BLUE}⏰ Started at: $(date)${NC}"
+echo -e "${BLUE}📍 Current directory: $(pwd)${NC}"
 
 # Check if we're in a git repository
 if ! git rev-parse --is-inside-work-tree &>/dev/null; then

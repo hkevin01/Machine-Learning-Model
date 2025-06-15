@@ -67,8 +67,8 @@ find . -type f \( -name "*.sh" -o -name "*.py" -o -name "*.md" -o -name "*.yaml"
 echo -e "${GREEN}✅ Trailing whitespace fixed${NC}"
 
 # Stage all changes
-echo "Testing if issues are resolved..."
-echo -e "${BLUE}🧪 Staging changes...${NC}"
+echo "Fixing issues and staging changes for VS Code Source Control..."
+echo -e "${BLUE}🧪 Staging changes for manual commit via VS Code...${NC}"
 git add -A
 
 # Check if there are staged changes
@@ -78,47 +78,27 @@ if git diff --cached --quiet; then
     exit 0
 fi
 
-echo "Staged changes found, proceeding with commit..."
+echo -e "${GREEN}✅ Changes staged and ready for VS Code Source Control${NC}"
 
-# Use bypass commit since pre-commit is causing issues
-COMMIT_MESSAGE="Fix unstaged changes and basic code formatting"
-echo "Using bypass commit with message: $COMMIT_MESSAGE"
-echo -e "${BLUE}💾 Creating bypass commit...${NC}"
-
-git commit --no-verify -m "$COMMIT_MESSAGE"
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Bypass commit created successfully${NC}"
-else
-    echo -e "${RED}❌ Even bypass commit failed${NC}"
-    exit 1
+# Don't commit - just prepare for VS Code Source Control extension
+echo -e "${BLUE}📋 Files staged and ready for commit via VS Code:${NC}"
+git diff --cached --name-only | head -10
+TOTAL_FILES=$(git diff --cached --name-only | wc -l)
+if [ "$TOTAL_FILES" -gt 10 ]; then
+    echo -e "${YELLOW}... and $(($TOTAL_FILES - 10)) more files${NC}"
 fi
 
-# Push changes to remote
-echo "Pushing to remote..."
-echo -e "${BLUE}📡 Pushing changes to remote...${NC}"
-REMOTE_NAME=$(git remote | head -n1)
-echo "Remote name: $REMOTE_NAME"
-
-if [ -z "$REMOTE_NAME" ]; then
-    echo -e "${RED}❌ No remote repository configured${NC}"
-    echo -e "${YELLOW}💡 Add a remote first: git remote add origin <github-url>${NC}"
-    exit 1
-fi
-
-echo "Pushing to $REMOTE_NAME $CURRENT_BRANCH"
-git push "$REMOTE_NAME" "$CURRENT_BRANCH"
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Successfully pushed to remote${NC}"
-else
-    echo -e "${RED}❌ Failed to push to remote${NC}"
-    exit 1
-fi
-
-echo -e "\n${PURPLE}🎉 Git unstaged commits fix completed!${NC}"
+echo -e "\n${PURPLE}🎉 Git staging fix completed!${NC}"
 echo -e "${BLUE}📋 Summary:${NC}"
 echo -e "✅ Fixed basic formatting issues"
 echo -e "✅ Staged all changes"
-echo -e "✅ Created bypass commit"
-echo -e "✅ Pushed changes to remote"
+echo -e "✅ Ready for VS Code Source Control extension"
 
-echo "Script completed successfully!"
+echo -e "\n${BLUE}🔗 Next steps:${NC}"
+echo -e "1. Open VS Code"
+echo -e "2. Go to Source Control panel (Ctrl+Shift+G)"
+echo -e "3. Review staged changes"
+echo -e "4. Add commit message and commit"
+echo -e "5. Push using VS Code interface"
+
+echo "Script completed successfully - use VS Code Source Control to commit!"

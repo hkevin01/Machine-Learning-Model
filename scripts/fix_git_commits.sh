@@ -1,11 +1,11 @@
 #!/bin/bash
 # Fix Git Commit Issues Script
-# Resolves common git commit problems and staging issues
+# Resolves common git commit problems and staging issues (NO COMMIT MODE)
 
 set -e
 
-echo "🔧 Git Commit Fix Script"
-echo "========================"
+echo "🔧 Git Commit Fix Script (NO COMMIT MODE)"
+echo "========================================="
 
 # Colors for output
 RED='\033[0;31m'
@@ -179,18 +179,18 @@ stage_files_safely() {
     echo -e "${GREEN}✅ Safe files staged${NC}"
 }
 
-# Function to create commit
+# Function to create commit (DISABLED - NO COMMIT MODE)
 create_commit() {
-    echo -e "\n${BLUE}💾 Creating commit...${NC}"
+    echo -e "\n${BLUE}💾 Preparing commit (NO COMMIT MODE)...${NC}"
 
     # Check if there are staged changes
     if git diff --cached --quiet; then
-        echo -e "${YELLOW}⚠️  No staged changes to commit${NC}"
+        echo -e "${YELLOW}⚠️  No staged changes ready for commit${NC}"
         return 1
     fi
 
     # Show what will be committed
-    echo -e "${BLUE}📋 Files to be committed:${NC}"
+    echo -e "${BLUE}📋 Files ready to be committed:${NC}"
     git diff --cached --name-only | head -20
     TOTAL_FILES=$(git diff --cached --name-only | wc -l)
     if [ "$TOTAL_FILES" -gt 20 ]; then
@@ -200,22 +200,16 @@ create_commit() {
     # Get commit message
     COMMIT_MESSAGE="${1:-Add datasets and update project structure}"
 
-    # Create commit bypassing pre-commit hooks
-    echo -e "${BLUE}Creating commit with message: '$COMMIT_MESSAGE'${NC}"
-    git commit --no-verify -m "$COMMIT_MESSAGE"
+    echo -e "${GREEN}✅ Files are staged and ready for commit${NC}"
+    echo -e "${BLUE}Suggested commit message: '$COMMIT_MESSAGE'${NC}"
+    echo -e "${YELLOW}💡 To commit manually, run: git commit -m \"$COMMIT_MESSAGE\"${NC}"
 
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Commit created successfully${NC}"
-        return 0
-    else
-        echo -e "${RED}❌ Commit failed${NC}"
-        return 1
-    fi
+    return 0
 }
 
-# Function to push to remote
+# Function to push to remote (DISABLED - NO COMMIT MODE)
 push_to_remote() {
-    echo -e "\n${BLUE}📡 Pushing to remote...${NC}"
+    echo -e "\n${BLUE}📡 Push preparation (NO COMMIT MODE)...${NC}"
 
     REMOTE_NAME=$(git remote | head -n1)
     if [ -z "$REMOTE_NAME" ]; then
@@ -225,26 +219,18 @@ push_to_remote() {
     fi
 
     CURRENT_BRANCH=$(git branch --show-current)
-    echo -e "${BLUE}Pushing to $REMOTE_NAME/$CURRENT_BRANCH${NC}"
+    echo -e "${BLUE}Ready to push to $REMOTE_NAME/$CURRENT_BRANCH${NC}"
+    echo -e "${YELLOW}💡 To push manually, run: git push $REMOTE_NAME $CURRENT_BRANCH${NC}"
 
-    git push "$REMOTE_NAME" "$CURRENT_BRANCH"
-
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ Successfully pushed to remote${NC}"
-        return 0
-    else
-        echo -e "${RED}❌ Failed to push to remote${NC}"
-        echo -e "${YELLOW}💡 Try: git push --set-upstream $REMOTE_NAME $CURRENT_BRANCH${NC}"
-        return 1
-    fi
+    return 0
 }
 
 # Main execution
 main() {
     local commit_message="${1:-Add datasets and update project progress}"
-    local should_push="${2:-true}"
+    local should_push="${2:-false}"
 
-    echo -e "${PURPLE}🚀 Starting Git Commit Fix Process${NC}"
+    echo -e "${PURPLE}🚀 Starting Git Commit Fix Process (NO COMMIT MODE)${NC}"
 
     # Step 1: Clean up problematic files
     cleanup_problematic_files
@@ -258,37 +244,30 @@ main() {
     # Step 4: Stage files safely
     stage_files_safely
 
-    # Step 5: Create commit
+    # Step 5: Prepare commit (but don't commit)
     if create_commit "$commit_message"; then
-        echo -e "${GREEN}✅ Commit successful${NC}"
+        echo -e "${GREEN}✅ Files staged and ready for commit${NC}"
 
-        # Step 6: Push to remote if requested
+        # Step 6: Show push instructions
         if [ "$should_push" = "true" ]; then
-            if push_to_remote; then
-                echo -e "${GREEN}✅ Push successful${NC}"
-            else
-                echo -e "${YELLOW}⚠️  Push failed, but commit was successful${NC}"
-            fi
+            push_to_remote
         fi
     else
-        echo -e "${RED}❌ Commit failed${NC}"
-        exit 1
+        echo -e "${YELLOW}⚠️  No changes to stage${NC}"
     fi
 
-    echo -e "\n${PURPLE}🎉 Git commit fix completed!${NC}"
+    echo -e "\n${PURPLE}🎉 Git commit fix completed (NO COMMIT MODE)!${NC}"
     echo -e "${BLUE}📋 Summary:${NC}"
     echo -e "✅ Cleaned up large files"
     echo -e "✅ Updated .gitignore"
     echo -e "✅ Staged safe files"
-    echo -e "✅ Created commit"
-    if [ "$should_push" = "true" ]; then
-        echo -e "✅ Pushed to remote"
-    fi
+    echo -e "✅ Files ready for commit"
 
-    echo -e "\n${BLUE}🔗 Next steps:${NC}"
-    echo -e "1. Check commit: git log --oneline -1"
-    echo -e "2. Verify files: git ls-files"
-    echo -e "3. Check remote: git status"
+    echo -e "\n${BLUE}🔗 Next steps (MANUAL):${NC}"
+    echo -e "1. Review staged files: git status"
+    echo -e "2. Commit when ready: git commit -m \"$commit_message\""
+    echo -e "3. Push if needed: git push"
+    echo -e "4. Check commit: git log --oneline -1"
 }
 
 # Parse command line arguments
@@ -321,5 +300,5 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Run main function
-main "$COMMIT_MSG" "$SHOULD_PUSH"
+# Run main function (force no-push mode)
+main "$COMMIT_MSG" "false"

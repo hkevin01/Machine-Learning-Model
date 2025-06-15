@@ -186,6 +186,64 @@ stage_files_safely() {
     echo -e "${GREEN}✅ Safe files staged${NC}"
 }
 
+# Function to fix whitespace issues
+fix_whitespace_issues() {
+    echo -e "\n${BLUE}✂️  Fixing whitespace issues...${NC}"
+
+    # Fix trailing whitespace in most files
+    echo -e "${YELLOW}Removing trailing whitespace...${NC}"
+    find . -type f \( -name "*.py" -o -name "*.sh" -o -name "*.yaml" -o -name "*.yml" \
+        -o -name "*.json" -o -name "*.txt" -o -name "*.html" -o -name "*.css" -o -name "*.js" \) \
+        -not -path "./.git/*" -not -path "./venv/*" -not -path "./.venv/*" \
+        > /tmp/whitespace_fix_files.tmp
+
+    while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            # Create backup
+            cp "$file" "$file.bak"
+            # Remove trailing whitespace
+            sed -i 's/[[:space:]]*$//' "$file"
+            # Check if changes were made
+            if cmp -s "$file" "$file.bak"; then
+                rm "$file.bak"  # No changes, remove backup
+            else
+                echo -e "  Fixed: $file"
+                rm "$file.bak"
+            fi
+        fi
+    done < /tmp/whitespace_fix_files.tmp
+
+    # Handle Markdown files separately (preserve intentional trailing spaces)
+    echo -e "${YELLOW}Carefully fixing Markdown files...${NC}"
+    find . -type f -name "*.md" -not -path "./.git/*" -not -path "./venv/*" -not -path "./.venv/*" \
+        -exec sh -c '
+            file="$1"
+            cp "$file" "$file.tmp"
+            # Preserve markdown line breaks (double spaces at end of line)
+            awk "{
+                if (match(substr(\$0, length(\$0)-1, 2), \"  $\")) {
+                    print \$0;  # Keep markdown line breaks
+                } else {
+                    sub(/[[:space:]]*$/, \"\");  # Remove other trailing spaces
+                    print \$0;
+                }
+            }" "$file.tmp" > "$file"
+            rm "$file.tmp"
+            echo "  Fixed: $file"
+        ' sh {} \;
+
+    # Ensure files end with newline
+    echo -e "${YELLOW}Ensuring files end with newline...${NC}"
+    find . -type f \( -name "*.py" -o -name "*.sh" -o -name "*.md" -o -name "*.yaml" -o -name "*.yml" \
+        -o -name "*.json" -o -name "*.txt" \) -not -path "./.git/*" -not -path "./venv/*" -not -path "./.venv/*" \
+        -exec sh -c 'if [ -s "$1" ] && [ "$(tail -c1 "$1" | wc -l)" -eq 0 ]; then echo >> "$1"; fi' _ {} \;
+
+    # Clean up temporary files
+    rm -f /tmp/whitespace_fix_files.tmp
+
+    echo -e "${GREEN}✅ Whitespace issues fixed${NC}"
+}
+
 # Function to create commit (DISABLED - NO COMMIT MODE)
 create_commit() {
     echo -e "\n${BLUE}💾 Preparing commit (NO COMMIT MODE)...${NC}"
@@ -280,6 +338,7 @@ main() {
 # Parse command line arguments
 COMMIT_MSG="Add datasets and update project structure - Phase 1 completion"
 SHOULD_PUSH="true"
+FIX_WHITESPACE_ONLY="false"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -291,12 +350,17 @@ while [[ $# -gt 0 ]]; do
             SHOULD_PUSH="false"
             shift
             ;;
+        --fix-whitespace)
+            FIX_WHITESPACE_ONLY="true"
+            shift
+            ;;
         -h|--help)
-            echo "Usage: $0 [-m|--message 'commit message'] [--no-push]"
+            echo "Usage: $0 [-m|--message 'commit message'] [--no-push] [--fix-whitespace]"
             echo "Options:"
-            echo "  -m, --message    Custom commit message"
-            echo "  --no-push        Don't push to remote after commit"
-            echo "  -h, --help       Show this help"
+            echo "  -m, --message      Custom commit message"
+            echo "  --no-push          Don't push to remote after commit"
+            echo "  --fix-whitespace   Only fix whitespace issues and exit"
+            echo "  -h, --help         Show this help"
             exit 0
             ;;
         *)
@@ -306,6 +370,14 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Run just whitespace fix if requested
+if [ "$FIX_WHITESPACE_ONLY" = "true" ]; then
+    echo -e "${PURPLE}🔧 Running whitespace fix only${NC}"
+    fix_whitespace_issues
+    echo -e "${GREEN}✅ Whitespace fix completed${NC}"
+    exit 0
+fi
 
 # Run main function (force no-push mode)
 main "$COMMIT_MSG" "false"

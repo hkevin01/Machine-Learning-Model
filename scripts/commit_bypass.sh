@@ -57,6 +57,14 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     exit 1
 fi
 
+# Kill any hanging isort/mypy processes that might be blocking
+echo -e "${BLUE}🔧 Cleaning up hanging processes...${NC}"
+pkill -f "isort" 2>/dev/null || true
+pkill -f "mypy" 2>/dev/null || true
+pkill -f "dmypy" 2>/dev/null || true
+pkill -f "black" 2>/dev/null || true
+echo -e "${GREEN}✅ Process cleanup completed${NC}"
+
 # Show current branch
 CURRENT_BRANCH=$(git branch --show-current)
 echo -e "${BLUE}🔄 Current branch: $CURRENT_BRANCH${NC}"
@@ -79,12 +87,19 @@ if [ -s large_files.tmp ]; then
             echo "$file" >> .gitignore
         fi
     done < large_files.tmp
-    #
+
     # Stage the updated .gitignore
     git add .gitignore
     echo -e "${GREEN}✅ Updated .gitignore with large files${NC}"
 fi
 rm -f large_files.tmp
+
+# Clean up any pre-commit cache that might be corrupted
+echo -e "${BLUE}🧹 Cleaning pre-commit cache...${NC}"
+if [ -d "$HOME/.cache/pre-commit" ]; then
+    rm -rf "$HOME/.cache/pre-commit"
+    echo -e "${GREEN}✅ Pre-commit cache cleared${NC}"
+fi
 
 # Exclude specific problematic paths
 echo -e "${BLUE}🧹 Excluding problematic files from staging...${NC}"

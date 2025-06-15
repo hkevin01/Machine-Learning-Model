@@ -1,0 +1,35 @@
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+pytest-asyncio>=0.21.0
+
+# Code formatting and linting
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0
+pylint>=2.17.0
+mypy>=1.5.0
+
+# Pre-commit hooks
+pre-commit>=3.3.0
+
+# Documentation
+sphinx>=7.1.0
+mkdocs>=1.5.0
+mkdocs-material>=9.1.0
+
+# Security
+bandit>=1.7.0
+safety>=2.3.0
+
+# Debugging and profiling
+ipdb>=0.13.0
+memory-profiler>=0.61.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Build tools
+build>=0.10.0
+twine>=4.0.0

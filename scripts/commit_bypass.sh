@@ -79,7 +79,7 @@ if [ -s large_files.tmp ]; then
             echo "$file" >> .gitignore
         fi
     done < large_files.tmp
-    
+    #
     # Stage the updated .gitignore
     git add .gitignore
     echo -e "${GREEN}✅ Updated .gitignore with large files${NC}"

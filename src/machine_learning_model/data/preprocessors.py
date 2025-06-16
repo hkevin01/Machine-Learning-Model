@@ -19,7 +19,6 @@ class DataPreprocessor:
 
     def preprocess(self, df: pd.DataFrame, strategy: str = "mean") -> pd.DataFrame:
         """Handle missing values in the dataset."""
-        if strategy == "mean":
             return df.fillna(df.mean())
         elif strategy == "median":
             return df.fillna(df.median())

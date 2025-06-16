@@ -48,6 +48,10 @@ def main(
         logger.info("Verbose mode enabled")
     if quiet:
         logger.remove()
+    if verbose:
+        logger.info("Verbose mode enabled")
+    if quiet:
+        logger.remove()
     """
     machine_learning_model - A Python package for [description]
     """

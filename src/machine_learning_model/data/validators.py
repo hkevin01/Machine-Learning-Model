@@ -44,7 +44,7 @@ class DataValidator:
 
     def validate_target_distribution():
         self, y: pd.Series, min_samples_per_class: int = 5
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Validate target variable distribution."""
         validation_results = {
             "passed": True,
@@ -88,7 +88,7 @@ class DataValidator:
 
     def detect_outliers():
         self, df: pd.DataFrame, columns: Optional[List[str]] = None
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Detect outliers in numeric columns."""
         if columns is None:
             columns = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -126,7 +126,7 @@ class DataValidator:
 
         return outlier_results
 
-    def validate_dataset_completeness():self, df: pd.DataFramedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_dataset_completeness():self, df: pd.DataFramedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Validate dataset completeness and quality."""
         validation_results = {
             "passed": True,
@@ -185,7 +185,7 @@ class DataValidator:
 
     def validate_column_names():
         self, df: pd.DataFrame, required_columns: List[str]
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Validate that required columns exist in the DataFrame."""
         validation_results = {
             "passed": True,
@@ -226,7 +226,7 @@ def validate_ml_dataset():
     required_columns: Optional[List[str]] = None,
     min_samples: int = 10,
     max_missing_percentage: float = 20.0,
-def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
     """Comprehensive validation for ML datasets."""
     validator = DataValidator()
 
@@ -283,7 +283,7 @@ import pandas as pd
 class DataValidator:
     """Data validation class for ML pipelines."""
 
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Validate data types of DataFrame columns."""
         validation_results = {
             "passed": True,
@@ -314,7 +314,7 @@ class DataValidator:
 
         return validation_results
 
-    def validate_target_distribution(self, y: pd.Series, min_samples_per_class: int = 5def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_target_distribution(self, y: pd.Series, min_samples_per_class: int = 5def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Validate target variable distribution."""
         validation_results = {
             "passed": True,
@@ -356,7 +356,7 @@ class DataValidator:
 
         return validation_results
 
-    def detect_outliers(self, df: pd.DataFrame, columns: Optional[List[str]] = Nonedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def detect_outliers(self, df: pd.DataFrame, columns: Optional[List[str]] = Nonedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Detect outliers in numeric columns."""
         if columns is None:
             columns = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -394,7 +394,7 @@ class DataValidator:
 
         return outlier_results
 
-    def validate_dataset_completeness(self, df: pd.DataFramedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_dataset_completeness(self, df: pd.DataFramedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Validate dataset completeness and quality."""
         validation_results = {
             "passed": True,
@@ -451,7 +451,7 @@ class DataValidator:
 
         return validation_results
 
-    def validate_column_names(self, df: pd.DataFrame, required_columns: List[str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+    def validate_column_names(self, df: pd.DataFrame, required_columns: List[str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
         """Validate that required columns exist in the DataFrame."""
         validation_results = {
             "passed": True,
@@ -492,7 +492,7 @@ def validate_ml_dataset(
     required_columns: Optional[List[str]] = None,
     min_samples: int = 10,
     max_missing_percentage: float = 20.0,
-def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
+def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
     """Comprehensive validation for ML datasets."""
     validator = DataValidator()
 

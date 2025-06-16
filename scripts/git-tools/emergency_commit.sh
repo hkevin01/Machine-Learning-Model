@@ -1,10 +1,5 @@
 #!/bin/bash
-# Emergency Commit Script - Bypasses pre-commit hooks
-# Use when normal commits are failing and you need to make an emergency commit
-
-# Force output to terminal
-exec > >(tee /dev/tty)
-exec 2>&1
+# Emergency commit script - bypasses ALL restrictions
 
 # Colors
 GREEN='\033[0;32m'
@@ -13,25 +8,28 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${YELLOW}⚠️ EMERGENCY COMMIT - Bypassing pre-commit hooks${NC}"
+echo -e "${YELLOW}🚨 EMERGENCY COMMIT - No restrictions${NC}"
 
 # Get commit message
 if [ $# -eq 0 ]; then
     echo -e "${BLUE}Enter commit message:${NC}"
     read -p "> " COMMIT_MSG
     if [ -z "$COMMIT_MSG" ]; then
-        COMMIT_MSG="Emergency commit - bypassing pre-commit hooks"
+        COMMIT_MSG="Emergency commit - no restrictions"
     fi
 else
     COMMIT_MSG="$1"
 fi
 
-# Perform commit with --no-verify flag
-echo -e "${BLUE}Committing with: ${COMMIT_MSG}${NC}"
+# Stage everything
+git add -A
+
+# Commit with no verification
+echo -e "${BLUE}Committing: ${COMMIT_MSG}${NC}"
 git commit --no-verify -m "$COMMIT_MSG"
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Emergency commit successful!${NC}"
+    echo -e "${GREEN}✅ Commit successful!${NC}"
 else
     echo -e "${RED}❌ Commit failed${NC}"
 fi

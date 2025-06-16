@@ -180,18 +180,7 @@ omit = ["*/tests/*", "*/test_*"]
 branch = true
 
 [tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if __name__ == .__main__.:",
-    "class .*\\\\bProtocol\\\\):",
-    "@(abc\\\\.)?abstractmethod",
-]
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:"]
 show_missing = true
 precision = 2
 

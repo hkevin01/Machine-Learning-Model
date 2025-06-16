@@ -62,7 +62,7 @@ class TestDataPreprocessor:
         assert isinstance(encoded_y, np.ndarray), "Should return numpy array"
         assert isinstance(mapping, dict), "Should return mapping dictionary"
         assert len(encoded_y) == len(sample_data), "Should maintain same length"
-        assert set(encoded_y) == {0, 1}, "Should have binary encoding for two classes"
+        assert set(encoded_y) == { 0, 1}, "Should have binary encoding for two classes"
 
     def test_split_train_test(self, sample_data):
         """Test train-test split functionality."""

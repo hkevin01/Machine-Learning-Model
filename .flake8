@@ -1,0 +1,22 @@
+[flake8]
+max-line-length = 88
+extend-ignore =
+    # Line length (handled by black)
+    E501,
+    # Missing docstrings in public module
+    D100,
+    # Missing docstrings in magic method
+    D105,
+    # Missing docstrings in __init__
+    D107,
+    # Whitespace after '{'
+    E201,
+    # Docstring first line should end with period
+    D400,
+    # First line should be in imperative mood
+    D401
+per-file-ignores =
+    # Allow unused imports in __init__.py
+    __init__.py:F401,F403
+    # Relax docstring requirements in tests
+    tests/*:D100,D101,D102,D103,D104,D105,D107

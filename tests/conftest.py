@@ -20,13 +20,13 @@ def temp_dir():
 @pytest.fixture
 def sample_data():
     """Provide sample data for tests."""
-    return {"name": "test", "value": 42, "items": ["a", "b", "c"]}
+    return { "name": "test", "value": 42, "items": ["a", "b", "c"]}
 
 
 @pytest.fixture(scope="session")
 def test_config():
     """Test configuration."""
-    return {"test_mode": True, "debug": False}
+    return { "test_mode": True, "debug": False}
 
 
 class MockResponse:
@@ -45,6 +45,6 @@ def mock_requests_get(monkeypatch):
     """Mock requests.get for testing."""
 
     def mock_get(*args, **kwargs):
-        return MockResponse({"key": "value"}, 200)
+        return MockResponse({ "key": "value"}, 200)
 
     monkeypatch.setattr("requests.get", mock_get)

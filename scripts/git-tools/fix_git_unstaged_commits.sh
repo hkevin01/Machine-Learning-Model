@@ -194,6 +194,36 @@ if [ -f ".pre-commit-config.yaml" ]; then
     fi
 fi
 
+# Special fix for pre-commit config file (add right before staging section)
+echo -e "${BLUE}🔧 Ensuring pre-commit config is properly fixed and staged...${NC}"
+if [ -f ".pre-commit-config.yaml" ]; then
+    # Apply extra fixes to pre-commit config
+    echo "Fixing pre-commit config file..."
+
+    # First remove trailing whitespace and ensure EOL
+    sed -i 's/[[:space:]]*$//' .pre-commit-config.yaml
+
+    # Ensure file ends with newline
+    if [ -s ".pre-commit-config.yaml" ] && [ "$(tail -c1 ".pre-commit-config.yaml" | wc -l)" -eq 0 ]; then
+        echo >> .pre-commit-config.yaml
+    fi
+
+    # Force stage the pre-commit config
+    echo "Force staging pre-commit config..."
+    git add .pre-commit-config.yaml
+
+    # Verify it was staged
+    if git diff --cached --quiet -- .pre-commit-config.yaml; then
+        echo -e "${YELLOW}⚠️ Pre-commit config not staged properly${NC}"
+        # Try again with absolute path
+        git add "$(pwd)/.pre-commit-config.yaml"
+    else
+        echo -e "${GREEN}✅ Pre-commit config staged successfully${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️ No pre-commit config file found${NC}"
+fi
+
 # Stage all changes
 echo "Fixing issues and staging changes for VS Code Source Control..."
 echo -e "${BLUE}🧪 Staging changes for manual commit via VS Code...${NC}"

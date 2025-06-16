@@ -1,0 +1,5 @@
+# Ignore all files in test-output except .gitkeep files
+*
+!.gitkeep
+!README.md
+!.gitignore

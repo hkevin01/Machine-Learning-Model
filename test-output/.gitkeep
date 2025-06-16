@@ -1,0 +1,2 @@
+# This file ensures the test-output directory is tracked by git
+# The test-output folder is used for storing logs of test output

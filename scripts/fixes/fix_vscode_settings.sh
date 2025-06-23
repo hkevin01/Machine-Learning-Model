@@ -100,13 +100,22 @@ create_clean_settings() {
     cat > "$settings_file" << 'EOF'
 {
     "python.defaultInterpreterPath": "./venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "files.watcherExclude": {
+        "**/venv/lib/**": true,
+        "**/venv/include/**": true
+    },
     "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
     "python.linting.flake8Enabled": true,
-    "python.linting.mypyEnabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length=88",
+        "--extend-ignore=E203,W503"
+    ],
     "python.formatting.provider": "black",
-    "python.formatting.blackArgs": ["--line-length=88"],
-    "python.sortImports.args": ["--profile", "black"],
+    "python.sortImports.args": [
+        "--profile=black"
+    ],
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports": true
@@ -114,11 +123,14 @@ create_clean_settings() {
     "files.exclude": {
         "**/__pycache__": true,
         "**/*.pyc": true,
+        "**/.pytest_cache": true,
+        "**/.coverage": true,
+        "**/htmlcov": true,
+        "**/.mypy_cache": true,
         "**/venv": true,
         "**/.venv": true,
-        "**/.pytest_cache": true,
-        "**/.mypy_cache": true,
-        "**/models/legacy/MODELS": true
+        "**/node_modules": true,
+        "**/.git": true
     },
     "search.exclude": {
         "**/venv": true,
@@ -178,7 +190,6 @@ create_clean_workspace_settings() {
     "python.testing.pytestEnabled": true,
     "python.testing.pytestArgs": ["tests"],
     "python.testing.unittestEnabled": false,
-    "mypy.dmypyExecutable": "./venv/bin/dmypy",
     "files.associations": {
         "*.py": "python"
     },

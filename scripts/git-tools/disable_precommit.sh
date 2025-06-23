@@ -28,6 +28,12 @@ rm -rf "$HOME/.cache/pre-commit" 2>/dev/null || true
 rm -rf ".mypy_cache" 2>/dev/null || true
 rm -rf ".pytest_cache" 2>/dev/null || true
 
+# Clean up cache directories
+echo "Cleaning up cache directories..."
+rm -rf ".pytest_cache" 2>/dev/null || true
+rm -rf ".coverage" 2>/dev/null || true
+rm -rf "htmlcov" 2>/dev/null || true
+
 # Remove any lock files
 find . -name "*.lock" -delete 2>/dev/null || true
 

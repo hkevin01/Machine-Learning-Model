@@ -70,6 +70,14 @@ cleanup_problematic_files() {
     fi
 
     rm -f large_files_found.tmp
+
+    # Clean up common cache and temporary files
+    echo "Cleaning up cache and temporary files..."
+    rm -rf "__pycache__" 2>/dev/null || true
+    rm -rf "*.pyc" 2>/dev/null || true
+    rm -rf ".pytest_cache" 2>/dev/null || true
+    rm -rf ".coverage" 2>/dev/null || true
+    rm -rf "htmlcov" 2>/dev/null || true
 }
 
 # Function to fix .gitignore

@@ -1,1 +1,11 @@
-Couldn't parse '/home/kevin/Projects/AI MODELS/Machine Learning Model/src/machine_learning_model/data/validators.py' as Python source: 'invalid decimal literal' at line 317
+Name                                               Stmts   Miss Branch BrPart   Cover   Missing
+-----------------------------------------------------------------------------------------------
+src/machine_learning_model/__init__.py                 0      0      0      0 100.00%
+src/machine_learning_model/cli.py                     37     37      8      0   0.00%   5-87
+src/machine_learning_model/data/__init__.py            0      0      0      0 100.00%
+src/machine_learning_model/data/loaders.py             7      3      0      0  57.14%   8, 13, 18
+src/machine_learning_model/data/preprocessors.py      72     68     30      0   3.92%   8-158
+src/machine_learning_model/data/validators.py        108    108     50      0   0.00%   3-274
+src/machine_learning_model/main.py                    21     21      0      0   0.00%   5-50
+-----------------------------------------------------------------------------------------------
+TOTAL                                                245    237     88      0   2.40%

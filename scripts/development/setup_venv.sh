@@ -106,6 +106,19 @@ EOF
     echo -e "${GREEN}✅ Basic requirements installed${NC}"
 fi
 
+# Install development dependencies
+echo "Installing development dependencies..."
+pip install -r requirements-dev.txt
+
+# Install additional development tools
+pip install \
+    pytest>=7.0.0 \
+    pytest-cov>=4.0.0 \
+    black>=23.0.0 \
+    isort>=5.12.0 \
+    flake8>=6.0.0 \
+    pre-commit>=3.0.0
+
 # List installed packages
 echo -e "${BLUE}📋 Installed packages:${NC}"
 pip list
@@ -145,25 +158,31 @@ mkdir -p "$VSCODE_SETTINGS_DIR"
 # Create or update VS Code settings to ensure venv is visible
 cat > "$VSCODE_SETTINGS_FILE" << 'EOF'
 {
+    "python.linting.enabled": true,
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length=88",
+        "--extend-ignore=E203,W503"
+    ],
+    "python.formatting.provider": "black",
+    "python.sortImports.args": [
+        "--profile=black"
+    ],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+    },
     "files.exclude": {
         "**/__pycache__": true,
         "**/*.pyc": true,
         "**/.pytest_cache": true,
+        "**/.coverage": true,
+        "**/htmlcov": true,
         "**/.mypy_cache": true,
-        "**/models/legacy/MODELS": true
-    },
-    "search.exclude": {
-        "**/__pycache__": true,
-        "**/*.pyc": true,
-        "**/.pytest_cache": true,
-        "**/models/legacy": true
-    },
-    "python.defaultInterpreterPath": "./venv/bin/python",
-    "python.terminal.activateEnvironment": true,
-    "python.terminal.activateEnvInCurrentTerminal": true,
-    "files.watcherExclude": {
-        "**/venv/lib/**": true,
-        "**/venv/include/**": true
+        "**/venv": true,
+        "**/.venv": true,
+        "**/node_modules": true,
+        "**/.git": true
     }
 }
 EOF

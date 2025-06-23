@@ -1,87 +1,72 @@
-# Fix Scripts
+# Fix Scripts Documentation
 
-Issue resolution and troubleshooting utilities.
+This directory contains scripts to resolve common development environment issues.
 
-## Scripts
+## Available Fix Scripts
 
-### fix_mypy_daemon.sh
-**Purpose**: Resolve MyPy daemon executable issues
+### fix_isort_connection.sh
+**Purpose**: Resolve isort connection issues and clear caches
 
-**Common Issue**: "The mypy daemon executable ('dmypy') was not found"
+**Common Issue**: "Connection refused" errors with isort
 
 **Usage**:
 ```bash
-./scripts/fixes/fix_mypy_daemon.sh
+./scripts/fixes/fix_isort_connection.sh
 ```
 
-**Solutions**:
-- Installs/upgrades mypy in virtual environment
-- Configures VS Code settings with absolute paths
-- Creates symbolic links for dmypy access
-- Tests daemon functionality
+**What it does**:
+- Kills hanging isort processes
+- Clears isort cache
+- Reinstalls isort if needed
 
 ### fix_precommit_issues.sh
-**Purpose**: Fix pre-commit hook problems and configuration
+**Purpose**: Resolve pre-commit hook issues
 
-**Common Issues**:
-- Deprecated stage names warnings
-- Trailing whitespace failures
-- Missing docstrings
-- Configuration syntax errors
+**Common Issue**: Pre-commit hooks failing or not working
 
 **Usage**:
 ```bash
 ./scripts/fixes/fix_precommit_issues.sh
 ```
 
-**Solutions**:
-- Updates pre-commit configuration to latest versions
-- Fixes pyproject.toml escape character issues
-- Adds missing docstrings
-- Resolves code style violations
+**What it does**:
+- Reinstalls pre-commit hooks
+- Clears pre-commit cache
+- Updates hook configurations
 
 ### fix_vscode_settings.sh
-**Purpose**: Repair VS Code configuration issues
-
-**Common Issue**: "Unable to write into user settings"
+**Purpose**: Configure VS Code for optimal Python development
 
 **Usage**:
 ```bash
 ./scripts/fixes/fix_vscode_settings.sh
 ```
 
-**Solutions**:
-- Fixes JSON syntax errors in settings
-- Repairs file permissions
-- Creates clean configuration files
-- Clears corrupted cache
+**What it does**:
+- Sets up Python interpreter path
+- Configures linting (flake8)
+- Sets up formatting (black)
+- Configures import sorting (isort)
+- Sets up testing (pytest)
 
-## When to Use
+## Common Issues and Solutions
 
-| Symptom                     | Script                    | Expected Result        |
-| --------------------------- | ------------------------- | ---------------------- |
-| MyPy not working in VS Code | `fix_mypy_daemon.sh`      | Type checking enabled  |
-| Pre-commit hooks failing    | `fix_precommit_issues.sh` | Clean commits possible |
-| VS Code errors on startup   | `fix_vscode_settings.sh`  | VS Code runs normally  |
+| Issue | Script | Result |
+|-------|--------|--------|
+| isort connection errors | `fix_isort_connection.sh` | isort working properly |
+| Pre-commit hooks failing | `fix_precommit_issues.sh` | Hooks working correctly |
+| VS Code not configured | `fix_vscode_settings.sh` | Optimal VS Code setup |
 
-## Post-Fix Actions
+## Troubleshooting Tips
 
-After running fix scripts:
+1. **General**: Restart VS Code completely after running fix scripts
+2. **isort**: Clear cache and restart if issues persist
+3. **Pre-commit**: Run `pre-commit clean` if hooks are corrupted
 
-1. **MyPy**: Restart VS Code completely
-2. **Pre-commit**: Try normal commit process
-3. **VS Code**: Reload window and select Python interpreter
+## Manual Fixes
 
-## Backup Policy
+If scripts don't resolve issues:
 
-All fix scripts create backups:
-- Timestamped backup files (`.backup.YYYYMMDD_HHMMSS`)
-- Original configurations preserved
-- Safe to run multiple times
-
-## Manual Fallbacks
-
-If scripts fail:
-- **MyPy**: `pip install mypy[dmypy]`
-- **Pre-commit**: `pre-commit clean && pre-commit install`
-- **VS Code**: Delete `.vscode/settings.json` and restart
+1. **isort**: `pip install --force-reinstall isort`
+2. **Pre-commit**: `pre-commit clean && pre-commit install`
+3. **VS Code**: Delete `.vscode/settings.json` and recreate

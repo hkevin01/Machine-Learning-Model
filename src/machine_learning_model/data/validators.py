@@ -1,540 +1,279 @@
-"""Data validation utilities for machine learning pipelines."""
+"""Data validation utilities for machine learning datasets."""
 
-from typing import Any, Dict, List, Optional, Tuple
-
-import numpy as np
-import pandas as pd
-
-
-class DataValidator:
-    """Data validation class for ML pipelines."""
-
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate data types of DataFrame columns."""
-        validation_results = {
-        """Validate data types of DataFrame columns."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "warnings": [],
-            "summary": { },
-        }
-
-        for column, expected_type in expected_types.items():
-            if column not in df.columns:
-                validation_results["errors"].append(
-                    f"Column '{ column}' not found in DataFrame"
-                )
-                validation_results["passed"] = False
-                continue
-
-            actual_type = str(df[column].dtype)
-            validation_results["summary"][column] = {
-                "expected": expected_type,
-                "actual": actual_type,
-                "match": expected_type in actual_type,
-            }
-
-            if expected_type not in actual_type:
-                validation_results["warnings"].append(
-                    f"Column '{ column}': expected { expected_type}, got { actual_type}"
-                )
-
-        return validation_results
-
-    def validate_target_distribution():
-        self, y: pd.Series, min_samples_per_class: int = 5
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate target variable distribution."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "warnings": [],
-            "distribution": { },
-            "class_balance": { },
-        }
-
-        # Get value counts
-        value_counts = y.value_counts()
-        validation_results["distribution"] = value_counts.to_dict()
-
-        # Check minimum samples per class
-        insufficient_classes = value_counts[value_counts < min_samples_per_class]
-        if len(insufficient_classes) > 0:
-            validation_results["errors"].extend(
-                [
-                    f"Class '{ cls}' has only { count} samples (minimum: { min_samples_per_class})"
-                    for cls, count in insufficient_classes.items()
-                ]
-            )
-            validation_results["passed"] = False
-
-        # Calculate class balance
-        total_samples = len(y)
-        for class_name, count in value_counts.items():
-            percentage = (count / total_samples) * 100
-            validation_results["class_balance"][class_name] = {
-                "count": count,
-                "percentage": percentage,
-            }
-
-            # Warn about severe imbalance
-            if percentage < 5:
-                validation_results["warnings"].append(
-                    f"Class '{ class_name}' represents only { percentage: .1f}% of data"
-                )
-
-        return validation_results
-
-    def detect_outliers():
-        self, df: pd.DataFrame, columns: Optional[List[str]] = None
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Detect outliers in numeric columns."""
-        if columns is None:
-            columns = df.select_dtypes(include=[np.number]).columns.tolist()
-
-        outlier_results = {
-            "total_outliers": 0,
-            "outliers_by_column": { },
-            "outlier_indices": set(),
-        }
-
-        for column in columns:
-            if column not in df.columns:
-                continue
-
-            Q1 = df[column].quantile(0.25)
-            Q3 = df[column].quantile(0.75)
-            IQR = Q3 - Q1
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
-
-            outliers = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
-            outlier_indices = outliers.index.tolist()
-
-            outlier_results["outliers_by_column"][column] = {
-                "count": len(outliers),
-                "percentage": (len(outliers) / len(df)) * 100,
-                "indices": outlier_indices,
-                "bounds": { "lower": lower_bound, "upper": upper_bound},
-            }
-
-            outlier_results["outlier_indices"].update(outlier_indices)
-
-        outlier_results["total_outliers"] = len(outlier_results["outlier_indices"])
-        outlier_results["outlier_indices"] = list(outlier_results["outlier_indices"])
-
-        return outlier_results
-
-    def validate_dataset_completeness():self, df: pd.DataFramedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate dataset completeness and quality."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "warnings": [],
-            "statistics": {
-                "total_rows": len(df),
-                "total_columns": len(df.columns),
-                "missing_values": { },
-                "duplicate_rows": 0,
-                "data_types": { },
-            },
-        }
-
-        # Check for missing values
-        missing_counts = df.isnull().sum()
-        # Removed unused variable: total_missing
-
-        for column, missing_count in missing_counts.items():
-            if missing_count > 0:
-                percentage = (missing_count / len(df)) * 100
-                validation_results["statistics"]["missing_values"][column] = {
-                    "count": missing_count,
-                    "percentage": percentage,
-                }
-
-                if percentage > 50:
-                    validation_results["errors"].append(
-                        f"Column '{ column}' has { percentage: .1f}% missing values"
-                    )
-                    validation_results["passed"] = False
-                elif percentage > 10:
-                    validation_results["warnings"].append(
-                        f"Column '{ column}' has { percentage: .1f}% missing values"
-                    )
-
-        # Check for duplicate rows
-        duplicate_count = df.duplicated().sum()
-        validation_results["statistics"]["duplicate_rows"] = duplicate_count
-        if duplicate_count > 0:
-            validation_results["warnings"].append(
-                f"Found { duplicate_count} duplicate rows"
-            )
-
-        # Data type summary
-        validation_results["statistics"][
-            "data_types"
-        ] = df.dtypes.value_counts().to_dict()
-
-        # Empty dataset check
-        if len(df) == 0:
-            validation_results["errors"].append("Dataset is empty")
-            validation_results["passed"] = False
-
-        return validation_results
-
-    def validate_column_names():
-        self, df: pd.DataFrame, required_columns: List[str]
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate that required columns exist in the DataFrame."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "missing_columns": [],
-            "extra_columns": [],
-            "column_mapping": { },
-        }
-
-        # Check for missing required columns
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        validation_results["missing_columns"] = missing_columns
-
-        if missing_columns:
-            validation_results["errors"].extend(
-                [f"Required column '{ col}' not found" for col in missing_columns]
-            )
-            validation_results["passed"] = False
-
-        # Find extra columns
-        extra_columns = [col for col in df.columns if col not in required_columns]
-        validation_results["extra_columns"] = extra_columns
-
-        # Create column mapping
-        for col in df.columns:
-            validation_results["column_mapping"][col] = {
-                "required": col in required_columns,
-                "dtype": str(df[col].dtype),
-                "non_null_count": df[col].count(),
-            }
-
-        return validation_results
-
-
-def validate_ml_dataset():
-    df: pd.DataFrame,
-    target_column: str,
-    required_columns: Optional[List[str]] = None,
-    min_samples: int = 10,
-    max_missing_percentage: float = 20.0,
-def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-    """Comprehensive validation for ML datasets."""
-    validator = DataValidator()
-
-    validation_results = {
-        "overall_passed": True,
-        "validations": { },
-        "summary": { "total_errors": 0, "total_warnings": 0},
-    }
-
-    # Dataset completeness
-    completeness = validator.validate_dataset_completeness(df)
-    validation_results["validations"]["completeness"] = completeness
-    if not completeness["passed"]:
-        validation_results["overall_passed"] = False
-
-    # Column validation
-    if required_columns:
-        column_validation = validator.validate_column_names(df, required_columns)
-        validation_results["validations"]["columns"] = column_validation
-        if not column_validation["passed"]:
-            validation_results["overall_passed"] = False
-
-    # Target validation
-    if target_column in df.columns:
-        target_validation = validator.validate_target_distribution(df[target_column])
-        validation_results["validations"]["target"] = target_validation
-        if not target_validation["passed"]:
-            validation_results["overall_passed"] = False
-
-    # Outlier detection
-    outlier_detection = validator.detect_outliers(df)
-    validation_results["validations"]["outliers"] = outlier_detection
-
-    # Calculate summary
-    for validation_name, validation_data in validation_results["validations"].items():
-        if "errors" in validation_data:
-            validation_results["summary"]["total_errors"] += len(
-                validation_data["errors"]
-            )
-        if "warnings" in validation_data:
-            validation_results["summary"]["total_warnings"] += len(
-                validation_data["warnings"]
-            )
-
-    return validation_results
-"""Data validation utilities for machine learning pipelines."""
-
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
 
+class DataType(Enum):
+    """Supported data types for validation."""
+    NUMERICAL = "numerical"
+    CATEGORICAL = "categorical"
+    TEXT = "text"
+    DATETIME = "datetime"
+
+
+@dataclass
+class ValidationResult:
+    """Result of a validation check."""
+    is_valid: bool
+    message: str
+    details: Optional[Dict[str, Any]] = None
+
+
 class DataValidator:
-    """Data validation class for ML pipelines."""
+    """Comprehensive data validation for ML datasets."""
 
-    def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate data types of DataFrame columns."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "warnings": [],
-            "summary": { },
-        }
+    def __init__(self):
+        self.validation_results: List[ValidationResult] = []
 
-        for column, expected_type in expected_types.items():
-            if column not in df.columns:
-                validation_results["errors"].append(
-                    f"Column '{ column}' not found in DataFrame"
-                )
-                validation_results["passed"] = False
-                continue
+    def validate_dataset(self, df: pd.DataFrame, expected_schema: Dict[str, DataType]) -> List[ValidationResult]:
+        """Validate a dataset against expected schema."""
+        results = []
+        
+        # Basic structure validation
+        results.extend(self._validate_structure(df))
+        
+        # Schema validation
+        results.extend(self._validate_schema(df, expected_schema))
+        
+        # Data quality validation
+        results.extend(self._validate_data_quality(df))
+        
+        # Statistical validation
+        results.extend(self._validate_statistics(df))
+        
+        self.validation_results = results
+        return results
 
-            actual_type = str(df[column].dtype)
-            validation_results["summary"][column] = {
-                "expected": expected_type,
-                "actual": actual_type,
-                "match": expected_type in actual_type,
-            }
-
-            if expected_type not in actual_type:
-                validation_results["warnings"].append(
-                    f"Column '{ column}': expected { expected_type}, got { actual_type}"
-                )
-
-        return validation_results
-
-    def validate_target_distribution(self, y: pd.Series, min_samples_per_class: int = 5def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate target variable distribution."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "warnings": [],
-            "distribution": { },
-            "class_balance": { },
-        }
-
-        # Get value counts
-        value_counts = y.value_counts()
-        validation_results["distribution"] = value_counts.to_dict()
-
-        # Check minimum samples per class
-        insufficient_classes = value_counts[value_counts < min_samples_per_class]
-        if len(insufficient_classes) > 0:
-            validation_results["errors"].extend(
-                [
-                    f"Class '{ cls}' has only { count} samples (minimum: { min_samples_per_class})"
-                    for cls, count in insufficient_classes.items()
-                ]
-            )
-            validation_results["passed"] = False
-
-        # Calculate class balance
-        total_samples = len(y)
-        for class_name, count in value_counts.items():
-            percentage = (count / total_samples) * 100
-            validation_results["class_balance"][class_name] = {
-                "count": count,
-                "percentage": percentage,
-            }
-
-            # Warn about severe imbalance
-            if percentage < 5:
-                validation_results["warnings"].append(
-                    f"Class '{ class_name}' represents only { percentage:.1f}% of data"
-                )
-
-        return validation_results
-
-    def detect_outliers(self, df: pd.DataFrame, columns: Optional[List[str]] = Nonedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Detect outliers in numeric columns."""
-        if columns is None:
-            columns = df.select_dtypes(include=[np.number]).columns.tolist()
-
-        outlier_results = {
-            "total_outliers": 0,
-            "outliers_by_column": { },
-            "outlier_indices": set(),
-        }
-
-        for column in columns:
-            if column not in df.columns:
-                continue
-
-            Q1 = df[column].quantile(0.25)
-            Q3 = df[column].quantile(0.75)
-            IQR = Q3 - Q1
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
-
-            outliers = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
-            outlier_indices = outliers.index.tolist()
-
-            outlier_results["outliers_by_column"][column] = {
-                "count": len(outliers),
-                "percentage": (len(outliers) / len(df)) * 100,
-                "indices": outlier_indices,
-                "bounds": { "lower": lower_bound, "upper": upper_bound},
-            }
-
-            outlier_results["outlier_indices"].update(outlier_indices)
-
-        outlier_results["total_outliers"] = len(outlier_results["outlier_indices"])
-        outlier_results["outlier_indices"] = list(outlier_results["outlier_indices"])
-
-        return outlier_results
-
-    def validate_dataset_completeness(self, df: pd.DataFramedef validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate dataset completeness and quality."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "warnings": [],
-            "statistics": {
-                "total_rows": len(df),
-                "total_columns": len(df.columns),
-                "missing_values": { },
-                "duplicate_rows": 0,
-                "data_types": { },
-            },
-        }
-
-        # Check for missing values
-        missing_counts = df.isnull().sum()
-        # Removed unused variable: total_missing
-
-        for column, missing_count in missing_counts.items():
-            if missing_count > 0:
-                percentage = (missing_count / len(df)) * 100
-                validation_results["statistics"]["missing_values"][column] = {
-                    "count": missing_count,
-                    "percentage": percentage,
-                }
-
-                if percentage > 50:
-                    validation_results["errors"].append(
-                        f"Column '{ column}' has { percentage:.1f}% missing values"
-                    )
-                    validation_results["passed"] = False
-                elif percentage > 10:
-                    validation_results["warnings"].append(
-                        f"Column '{ column}' has { percentage:.1f}% missing values"
-                    )
-
+    def _validate_structure(self, df: pd.DataFrame) -> List[ValidationResult]:
+        """Validate basic dataset structure."""
+        results = []
+        
+        # Check if DataFrame is empty
+        if df.empty:
+            results.append(ValidationResult(
+                is_valid=False,
+                message="Dataset is empty",
+                details={"shape": df.shape}
+            ))
+        else:
+            results.append(ValidationResult(
+                is_valid=True,
+                message=f"Dataset has {len(df)} rows and {len(df.columns)} columns",
+                details={"shape": df.shape}
+            ))
+        
         # Check for duplicate rows
         duplicate_count = df.duplicated().sum()
-        validation_results["statistics"]["duplicate_rows"] = duplicate_count
         if duplicate_count > 0:
-            validation_results["warnings"].append(
-                f"Found { duplicate_count} duplicate rows"
-            )
+            results.append(ValidationResult(
+                is_valid=False,
+                message=f"Found {duplicate_count} duplicate rows",
+                details={"duplicate_count": duplicate_count}
+            ))
+        else:
+            results.append(ValidationResult(
+                is_valid=True,
+                message="No duplicate rows found"
+            ))
+        
+        return results
 
-        # Data type summary
-        validation_results["statistics"][
-            "data_types"
-        ] = df.dtypes.value_counts().to_dict()
+    def _validate_schema(self, df: pd.DataFrame, expected_schema: Dict[str, DataType]) -> List[ValidationResult]:
+        """Validate dataset schema against expected types."""
+        results = []
+        
+        for column, expected_type in expected_schema.items():
+            if column not in df.columns:
+                results.append(ValidationResult(
+                    is_valid=False,
+                    message=f"Missing required column: {column}",
+                    details={"missing_column": column}
+                ))
+                continue
+            
+            # Validate data type
+            if expected_type == DataType.NUMERICAL:
+                if not pd.api.types.is_numeric_dtype(df[column]):
+                    results.append(ValidationResult(
+                        is_valid=False,
+                        message=f"Column {column} should be numerical but is {df[column].dtype}",
+                        details={"column": column, "actual_type": str(df[column].dtype)}
+                    ))
+                else:
+                    results.append(ValidationResult(
+                        is_valid=True,
+                        message=f"Column {column} is correctly typed as numerical"
+                    ))
+            
+            elif expected_type == DataType.CATEGORICAL:
+                if not pd.api.types.is_categorical_dtype(df[column]) and not pd.api.types.is_object_dtype(df[column]):
+                    results.append(ValidationResult(
+                        is_valid=False,
+                        message=f"Column {column} should be categorical but is {df[column].dtype}",
+                        details={"column": column, "actual_type": str(df[column].dtype)}
+                    ))
+                else:
+                    results.append(ValidationResult(
+                        is_valid=True,
+                        message=f"Column {column} is correctly typed as categorical"
+                    ))
+        
+        return results
 
-        # Empty dataset check
-        if len(df) == 0:
-            validation_results["errors"].append("Dataset is empty")
-            validation_results["passed"] = False
+    def _validate_data_quality(self, df: pd.DataFrame) -> List[ValidationResult]:
+        """Validate data quality metrics."""
+        results = []
+        
+        # Check for missing values
+        missing_data = df.isnull().sum()
+        total_missing = missing_data.sum()
+        
+        if total_missing > 0:
+            missing_percentage = (total_missing / (len(df) * len(df.columns))) * 100
+            results.append(ValidationResult(
+                is_valid=False,
+                message=f"Found {total_missing} missing values ({missing_percentage:.2f}%)",
+                details={"missing_counts": missing_data.to_dict(), "total_missing": total_missing}
+            ))
+        else:
+            results.append(ValidationResult(
+                is_valid=True,
+                message="No missing values found"
+            ))
+        
+        # Check for infinite values in numerical columns
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        infinite_counts = {}
+        
+        for col in numerical_columns:
+            infinite_count = np.isinf(df[col]).sum()
+            if infinite_count > 0:
+                infinite_counts[col] = infinite_count
+        
+        if infinite_counts:
+            results.append(ValidationResult(
+                is_valid=False,
+                message=f"Found infinite values in columns: {list(infinite_counts.keys())}",
+                details={"infinite_counts": infinite_counts}
+            ))
+        else:
+            results.append(ValidationResult(
+                is_valid=True,
+                message="No infinite values found in numerical columns"
+            ))
+        
+        return results
 
-        return validation_results
+    def _validate_statistics(self, df: pd.DataFrame) -> List[ValidationResult]:
+        """Validate statistical properties of the dataset."""
+        results = []
+        
+        numerical_columns = df.select_dtypes(include=[np.number]).columns
+        
+        for col in numerical_columns:
+            # Check for zero variance (constant columns)
+            if df[col].var() == 0:
+                results.append(ValidationResult(
+                    is_valid=False,
+                    message=f"Column {col} has zero variance (constant values)",
+                    details={"column": col, "value": df[col].iloc[0]}
+                ))
+            else:
+                results.append(ValidationResult(
+                    is_valid=True,
+                    message=f"Column {col} has non-zero variance"
+                ))
+            
+            # Check for extreme outliers (beyond 3 standard deviations)
+            mean_val = df[col].mean()
+            std_val = df[col].std()
+            outliers = df[col][(df[col] < mean_val - 3 * std_val) | (df[col] > mean_val + 3 * std_val)]
+            
+            if len(outliers) > 0:
+                results.append(ValidationResult(
+                    is_valid=False,
+                    message=f"Column {col} has {len(outliers)} extreme outliers",
+                    details={"column": col, "outlier_count": len(outliers), "outlier_values": outliers.tolist()}
+                ))
+        
+        return results
 
-    def validate_column_names(self, df: pd.DataFrame, required_columns: List[str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-        """Validate that required columns exist in the DataFrame."""
-        validation_results = {
-            "passed": True,
-            "errors": [],
-            "missing_columns": [],
-            "extra_columns": [],
-            "column_mapping": { },
+    def get_summary(self) -> Dict[str, Any]:
+        """Get a summary of all validation results."""
+        if not self.validation_results:
+            return {"status": "No validation performed"}
+        
+        total_checks = len(self.validation_results)
+        passed_checks = sum(1 for result in self.validation_results if result.is_valid)
+        failed_checks = total_checks - passed_checks
+        
+        return {
+            "total_checks": total_checks,
+            "passed_checks": passed_checks,
+            "failed_checks": failed_checks,
+            "success_rate": passed_checks / total_checks if total_checks > 0 else 0,
+            "is_valid": failed_checks == 0,
+            "failed_messages": [result.message for result in self.validation_results if not result.is_valid]
         }
 
-        # Check for missing required columns
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        validation_results["missing_columns"] = missing_columns
 
-        if missing_columns:
-            validation_results["errors"].extend(
-                [f"Required column '{ col}' not found" for col in missing_columns]
-            )
-            validation_results["passed"] = False
-
-        # Find extra columns
-        extra_columns = [col for col in df.columns if col not in required_columns]
-        validation_results["extra_columns"] = extra_columns
-
-        # Create column mapping
-        for col in df.columns:
-            validation_results["column_mapping"][col] = {
-                "required": col in required_columns,
-                "dtype": str(df[col].dtype),
-                "non_null_count": df[col].count(),
-            }
-
-        return validation_results
-
-
-def validate_ml_dataset(
-    df: pd.DataFrame,
-    target_column: str,
-    required_columns: Optional[List[str]] = None,
-    min_samples: int = 10,
-    max_missing_percentage: float = 20.0,
-def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]def validate_data_types(self, df: pd.DataFrame, expected_types: Dict[str, str]) -> Dict[str, Any]:
-    """Comprehensive validation for ML datasets."""
-    validator = DataValidator()
-
-    validation_results = {
-        "overall_passed": True,
-        "validations": { },
-        "summary": { "total_errors": 0, "total_warnings": 0},
+def validate_iris_dataset(df: pd.DataFrame) -> List[ValidationResult]:
+    """Validate Iris dataset specifically."""
+    expected_schema = {
+        "sepal_length": DataType.NUMERICAL,
+        "sepal_width": DataType.NUMERICAL,
+        "petal_length": DataType.NUMERICAL,
+        "petal_width": DataType.NUMERICAL,
+        "species": DataType.CATEGORICAL
     }
+    
+    validator = DataValidator()
+    return validator.validate_dataset(df, expected_schema)
 
-    # Dataset completeness
-    completeness = validator.validate_dataset_completeness(df)
-    validation_results["validations"]["completeness"] = completeness
-    if not completeness["passed"]:
-        validation_results["overall_passed"] = False
 
-    # Column validation
-    if required_columns:
-        column_validation = validator.validate_column_names(df, required_columns)
-        validation_results["validations"]["columns"] = column_validation
-        if not column_validation["passed"]:
-            validation_results["overall_passed"] = False
+def validate_wine_dataset(df: pd.DataFrame) -> List[ValidationResult]:
+    """Validate Wine dataset specifically."""
+    expected_schema = {
+        "alcohol": DataType.NUMERICAL,
+        "malic_acid": DataType.NUMERICAL,
+        "ash": DataType.NUMERICAL,
+        "alcalinity_of_ash": DataType.NUMERICAL,
+        "magnesium": DataType.NUMERICAL,
+        "total_phenols": DataType.NUMERICAL,
+        "flavanoids": DataType.NUMERICAL,
+        "nonflavanoid_phenols": DataType.NUMERICAL,
+        "proanthocyanins": DataType.NUMERICAL,
+        "color_intensity": DataType.NUMERICAL,
+        "hue": DataType.NUMERICAL,
+        "od280_od315_of_diluted_wines": DataType.NUMERICAL,
+        "proline": DataType.NUMERICAL,
+        "target": DataType.CATEGORICAL
+    }
+    
+    validator = DataValidator()
+    return validator.validate_dataset(df, expected_schema)
 
-    # Target validation
-    if target_column in df.columns:
-        target_validation = validator.validate_target_distribution(df[target_column])
-        validation_results["validations"]["target"] = target_validation
-        if not target_validation["passed"]:
-            validation_results["overall_passed"] = False
 
-    # Outlier detection
-    outlier_detection = validator.detect_outliers(df)
-    validation_results["validations"]["outliers"] = outlier_detection
-
-    # Calculate summary
-    for validation_name, validation_data in validation_results["validations"].items():
-        if "errors" in validation_data:
-            validation_results["summary"]["total_errors"] += len(
-                validation_data["errors"]
-            )
-        if "warnings" in validation_data:
-            validation_results["summary"]["total_warnings"] += len(
-                validation_data["warnings"]
-            )
-
-    return validation_results
+def validate_housing_dataset(df: pd.DataFrame) -> List[ValidationResult]:
+    """Validate Housing dataset specifically."""
+    expected_schema = {
+        "longitude": DataType.NUMERICAL,
+        "latitude": DataType.NUMERICAL,
+        "housing_median_age": DataType.NUMERICAL,
+        "total_rooms": DataType.NUMERICAL,
+        "total_bedrooms": DataType.NUMERICAL,
+        "population": DataType.NUMERICAL,
+        "households": DataType.NUMERICAL,
+        "median_income": DataType.NUMERICAL,
+        "median_house_value": DataType.NUMERICAL
+    }
+    
+    validator = DataValidator()
+    return validator.validate_dataset(df, expected_schema)
+    return validator.validate_dataset(df, expected_schema)
+    return validator.validate_dataset(df, expected_schema)

@@ -57,13 +57,9 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     exit 1
 fi
 
-# Kill any hanging isort/mypy processes that might be blocking
-echo -e "${BLUE}🔧 Cleaning up hanging processes...${NC}"
+# Kill any hanging isort processes that might be blocking
+echo "Killing hanging isort processes..."
 pkill -f "isort" 2>/dev/null || true
-pkill -f "mypy" 2>/dev/null || true
-pkill -f "dmypy" 2>/dev/null || true
-pkill -f "black" 2>/dev/null || true
-echo -e "${GREEN}✅ Process cleanup completed${NC}"
 
 # Show current branch
 CURRENT_BRANCH=$(git branch --show-current)

@@ -5,9 +5,9 @@ This example demonstrates the complete ML workflow using the agent-based system,
 from data collection through deployment and monitoring.
 """
 
+import logging
 import os
 import sys
-import logging
 
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))

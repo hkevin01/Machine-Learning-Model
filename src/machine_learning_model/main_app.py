@@ -5,10 +5,10 @@ This application provides both the traditional algorithm explorer and
 the new agent-based workflow navigator in a unified interface.
 """
 
-import tkinter as tk
-from tkinter import ttk, messagebox
-import sys
 import os
+import sys
+import tkinter as tk
+from tkinter import messagebox, ttk
 
 # Add the src directory to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))

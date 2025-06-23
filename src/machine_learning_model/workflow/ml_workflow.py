@@ -7,14 +7,15 @@ integrating data collection through deployment with intelligent guidance and aut
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from typing import Any, Dict, List, Optional, Tuple
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from .ml_agent import MLAgent, WorkflowStep, WorkflowStepStatus, WorkflowStepType
 
@@ -467,16 +468,24 @@ class MLWorkflow:
         problem_type = "classification" if is_classification else "regression"
         
         # Import available algorithms
-        from ..supervised.decision_tree import DecisionTreeClassifier as CustomDecisionTreeClassifier
-        from ..supervised.decision_tree import DecisionTreeRegressor as CustomDecisionTreeRegressor
-        from ..supervised.random_forest import RandomForestClassifier as CustomRandomForestClassifier
-        from ..supervised.random_forest import RandomForestRegressor as CustomRandomForestRegressor
-        
         # Also import sklearn as baseline
         from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.linear_model import LinearRegression, LogisticRegression
         from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-        from sklearn.linear_model import LogisticRegression, LinearRegression
-        
+
+        from ..supervised.decision_tree import (
+            DecisionTreeClassifier as CustomDecisionTreeClassifier,
+        )
+        from ..supervised.decision_tree import (
+            DecisionTreeRegressor as CustomDecisionTreeRegressor,
+        )
+        from ..supervised.random_forest import (
+            RandomForestClassifier as CustomRandomForestClassifier,
+        )
+        from ..supervised.random_forest import (
+            RandomForestRegressor as CustomRandomForestRegressor,
+        )
+
         # Select algorithms based on problem type and preferences
         selected_algorithms = kwargs.get('algorithms', 'auto')
         
@@ -567,7 +576,12 @@ class MLWorkflow:
             logger.error("Models or validation data not available")
             return False
         
-        from sklearn.metrics import accuracy_score, mean_squared_error, r2_score, classification_report
+        from sklearn.metrics import (
+            accuracy_score,
+            classification_report,
+            mean_squared_error,
+            r2_score,
+        )
         
         evaluation_results = {}
         is_classification = self.y_val.nunique() < 20 and self.y_val.dtype == 'object' or self.y_val.nunique() <= 10

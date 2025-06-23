@@ -5,15 +5,16 @@ This module provides a comprehensive GUI for the ML Agent workflow system,
 allowing users to navigate through the ML pipeline step-by-step with visual guidance.
 """
 
-import tkinter as tk
-from tkinter import ttk, messagebox, filedialog, scrolledtext
+import json
 import os
 import threading
-from typing import Dict, Any, Optional
-import json
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext, ttk
+from typing import Any, Dict, Optional
+
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from ..workflow import MLAgent, MLWorkflow
 from ..workflow.ml_agent import WorkflowStepStatus

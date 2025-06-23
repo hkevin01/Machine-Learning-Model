@@ -5,17 +5,23 @@ This module provides individual implementations for each step in the ML workflow
 allowing for more granular control and customization of the pipeline.
 """
 
+import logging
+import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
-import logging
-import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import accuracy_score, mean_squared_error, r2_score, classification_report
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
-import os
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    mean_squared_error,
+    r2_score,
+)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 logger = logging.getLogger(__name__)
 
@@ -451,16 +457,24 @@ class AlgorithmSelectionStep(WorkflowStepImplementation):
         problem_type = "classification" if is_classification else "regression"
         
         # Import available algorithms
-        from ..supervised.decision_tree import DecisionTreeClassifier as CustomDecisionTreeClassifier
-        from ..supervised.decision_tree import DecisionTreeRegressor as CustomDecisionTreeRegressor
-        from ..supervised.random_forest import RandomForestClassifier as CustomRandomForestClassifier
-        from ..supervised.random_forest import RandomForestRegressor as CustomRandomForestRegressor
-        
         # Also import sklearn as baseline
         from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.linear_model import LinearRegression, LogisticRegression
         from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-        from sklearn.linear_model import LogisticRegression, LinearRegression
-        
+
+        from ..supervised.decision_tree import (
+            DecisionTreeClassifier as CustomDecisionTreeClassifier,
+        )
+        from ..supervised.decision_tree import (
+            DecisionTreeRegressor as CustomDecisionTreeRegressor,
+        )
+        from ..supervised.random_forest import (
+            RandomForestClassifier as CustomRandomForestClassifier,
+        )
+        from ..supervised.random_forest import (
+            RandomForestRegressor as CustomRandomForestRegressor,
+        )
+
         # Select algorithms based on problem type and preferences
         selected_algorithms = kwargs.get('algorithms', 'auto')
         

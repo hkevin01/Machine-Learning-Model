@@ -1,280 +1,304 @@
-"""Random Forest Classifier implementation with comprehensive features."""
+"""Random Forest implementation for classification and regression."""
 
-import os
-from typing import Any, Dict, Optional
+import warnings
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict, List, Optional, Union
 
-import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier as SklearnRandomForest
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.preprocessing import LabelEncoder
+
+from .decision_tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
-class RandomForestClassifier:
-    """Enhanced Random Forest Classifier with comprehensive features."""
+class BaseRandomForest:
+    """Base class for Random Forest algorithms."""
     
-    def __init__(self, 
-                 n_estimators: int = 100,
-                 max_depth: Optional[int] = None,
-                 min_samples_split: int = 2,
-                 min_samples_leaf: int = 1,
-                 criterion: str = "gini",
-                 random_state: int = 42):
-        """
-        Initialize Random Forest Classifier.
+    def __init__(self, n_estimators: int = 100, max_depth: Optional[int] = None,
+                 min_samples_split: int = 2, min_samples_leaf: int = 1,
+                 max_features: Union[str, int, float] = 'sqrt', bootstrap: bool = True,
+                 oob_score: bool = False, random_state: Optional[int] = None,
+                 n_jobs: Optional[int] = None, verbose: int = 0):
         
-        Args:
-            n_estimators: Number of trees in the forest
-            max_depth: Maximum depth of each tree
-            min_samples_split: Minimum samples required to split
-            min_samples_leaf: Minimum samples required at leaf node
-            criterion: Split criterion ("gini" or "entropy")
-            random_state: Random state for reproducibility
-        """
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
-        self.criterion = criterion
+        self.max_features = max_features
+        self.bootstrap = bootstrap
+        self.oob_score = oob_score
         self.random_state = random_state
+        self.n_jobs = n_jobs if n_jobs is not None else 1
+        self.verbose = verbose
         
-        # Initialize the model
-        self.model = SklearnRandomForest(
-            n_estimators=n_estimators,
-            max_depth=max_depth,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            criterion=criterion,
-            random_state=random_state
-        )
+        # Initialize attributes
+        self.estimators_ = []
+        self.feature_importances_ = None
+        self.oob_score_ = None
+        self.oob_prediction_ = None
+        self.n_features_ = None
+        self.n_outputs_ = None
         
-        # Training state
-        self.is_trained = False
-        self.feature_names = None
-        self.class_names = None
-        self.label_encoder = LabelEncoder()
-        
-        # Performance metrics
-        self.training_accuracy = None
-        self.validation_accuracy = None
-        self.cross_val_scores = None
-        
-    def fit(self, X: pd.DataFrame, y: pd.Series, validation_split: float = 0.2) -> 'RandomForestClassifier':
-        """
-        Fit the Random Forest model.
-        
-        Args:
-            X: Feature matrix
-            y: Target variable
-            validation_split: Fraction of data to use for validation
-            
-        Returns:
-            Self for method chaining
-        """
-        # Store feature names
-        self.feature_names = X.columns.tolist() if hasattr(X, 'columns') else None
-        
-        # Encode target variable if needed
-        if y.dtype == 'object':
-            y_encoded = self.label_encoder.fit_transform(y)
-            self.class_names = self.label_encoder.classes_
+        # Set random state
+        if random_state is not None:
+            np.random.seed(random_state)
+    
+    def _get_max_features(self, n_features: int) -> int:
+        """Calculate the number of features to consider for each split."""
+        if isinstance(self.max_features, str):
+            if self.max_features == 'sqrt':
+                return int(np.sqrt(n_features))
+            elif self.max_features == 'log2':
+                return int(np.log2(n_features))
+            elif self.max_features == 'auto':
+                return int(np.sqrt(n_features))
+            else:
+                raise ValueError(f"Unknown max_features: {self.max_features}")
+        elif isinstance(self.max_features, int):
+            return min(self.max_features, n_features)
+        elif isinstance(self.max_features, float):
+            return int(self.max_features * n_features)
         else:
-            y_encoded = y
-            self.class_names = np.unique(y)
+            raise ValueError(f"Invalid max_features type: {type(self.max_features)}")
+    
+    def _bootstrap_sample(self, X: np.ndarray, y: np.ndarray) -> tuple:
+        """Create a bootstrap sample of the data."""
+        n_samples = X.shape[0]
         
-        # Split data for validation
-        X_train, X_val, y_train, y_val = train_test_split(
-            X, y_encoded, test_size=validation_split, random_state=self.random_state, stratify=y_encoded
-        )
+        if self.bootstrap:
+            # Sample with replacement
+            indices = np.random.choice(n_samples, size=n_samples, replace=True)
+        else:
+            # Use all samples without replacement
+            indices = np.arange(n_samples)
+            np.random.shuffle(indices)
         
-        # Fit the model
-        self.model.fit(X_train, y_train)
-        self.is_trained = True
+        return X[indices], y[indices], indices
+    
+    def _calculate_oob_score(self, X: np.ndarray, y: np.ndarray):
+        """Calculate out-of-bag score."""
+        n_samples = X.shape[0]
+        oob_prediction = np.zeros((n_samples,) + y.shape[1:] if y.ndim > 1 else (n_samples,))
+        oob_count = np.zeros(n_samples)
         
-        # Calculate performance metrics
-        self.training_accuracy = accuracy_score(y_train, self.model.predict(X_train))
-        self.validation_accuracy = accuracy_score(y_val, self.model.predict(X_val))
+        for estimator, bootstrap_indices in zip(self.estimators_, self.bootstrap_indices_):
+            # Find out-of-bag samples
+            oob_indices = np.setdiff1d(np.arange(n_samples), bootstrap_indices)
+            
+            if len(oob_indices) > 0:
+                oob_pred = estimator.predict(X[oob_indices])
+                oob_prediction[oob_indices] += oob_pred
+                oob_count[oob_indices] += 1
         
-        # Cross-validation
-        self.cross_val_scores = cross_val_score(
-            self.model, X, y_encoded, cv=5, scoring='accuracy'
-        )
+        # Avoid division by zero
+        valid_oob = oob_count > 0
+        oob_prediction[valid_oob] /= oob_count[valid_oob][:, np.newaxis] if y.ndim > 1 else oob_count[valid_oob]
+        
+        self.oob_prediction_ = oob_prediction
+        
+        # Calculate OOB score
+        if np.sum(valid_oob) > 0:
+            self.oob_score_ = self._calculate_oob_metric(y[valid_oob], oob_prediction[valid_oob])
+        else:
+            self.oob_score_ = 0.0
+    
+    def _calculate_feature_importances(self):
+        """Calculate feature importances by averaging across all trees."""
+        if not self.estimators_:
+            return
+        
+        importances = np.zeros(self.n_features_)
+        
+        for estimator in self.estimators_:
+            if hasattr(estimator, 'feature_importances_') and estimator.feature_importances_ is not None:
+                importances += estimator.feature_importances_
+        
+        # Average and normalize
+        importances /= len(self.estimators_)
+        
+        # Ensure importances sum to 1
+        if np.sum(importances) > 0:
+            importances /= np.sum(importances)
+        
+        self.feature_importances_ = importances
+    
+    def _fit_single_tree(self, args):
+        """Fit a single tree (for parallel processing)."""
+        X, y, tree_idx, random_state = args
+        
+        # Set random state for this tree
+        if random_state is not None:
+            np.random.seed(random_state + tree_idx)
+        
+        # Create bootstrap sample
+        X_bootstrap, y_bootstrap, bootstrap_indices = self._bootstrap_sample(X, y)
+        
+        # Create and fit tree
+        tree = self._create_tree()
+        tree.fit(X_bootstrap, y_bootstrap)
+        
+        return tree, bootstrap_indices
+    
+    def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]):
+        """Train the Random Forest."""
+        # Convert inputs
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+        if isinstance(y, pd.Series):
+            y = y.values
+        
+        self.n_features_ = X.shape[1]
+        self.n_outputs_ = 1 if y.ndim == 1 else y.shape[1]
+        
+        # Prepare arguments for parallel processing
+        if self.random_state is not None:
+            random_states = [self.random_state + i for i in range(self.n_estimators)]
+        else:
+            random_states = [None] * self.n_estimators
+        
+        args_list = [(X, y, i, random_states[i]) for i in range(self.n_estimators)]
+        
+        # Fit trees
+        if self.n_jobs == 1:
+            # Sequential processing
+            results = [self._fit_single_tree(args) for args in args_list]
+        else:
+            # Parallel processing
+            with ThreadPoolExecutor(max_workers=self.n_jobs) as executor:
+                results = list(executor.map(self._fit_single_tree, args_list))
+        
+        # Extract trees and bootstrap indices
+        self.estimators_ = [result[0] for result in results]
+        self.bootstrap_indices_ = [result[1] for result in results]
+        
+        # Calculate feature importances
+        self._calculate_feature_importances()
+        
+        # Calculate OOB score if requested
+        if self.oob_score:
+            self._calculate_oob_score(X, y)
+        
+        if self.verbose > 0:
+            print(f"Random Forest fitted with {len(self.estimators_)} trees")
         
         return self
     
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
-        """
-        Make predictions.
+    def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+        """Make predictions using the ensemble."""
+        if isinstance(X, pd.DataFrame):
+            X = X.values
         
-        Args:
-            X: Feature matrix
-            
-        Returns:
-            Predicted classes
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before making predictions")
+        if not self.estimators_:
+            raise ValueError("Forest not fitted yet")
         
-        predictions = self.model.predict(X)
+        # Get predictions from all trees
+        predictions = np.array([tree.predict(X) for tree in self.estimators_])
         
-        # Decode predictions if label encoder was used
-        if hasattr(self.label_encoder, 'classes_'):
-            predictions = self.label_encoder.inverse_transform(predictions)
-        
-        return predictions
-    
-    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
-        """
-        Predict class probabilities.
-        
-        Args:
-            X: Feature matrix
-            
-        Returns:
-            Class probabilities
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before making predictions")
-        
-        return self.model.predict_proba(X)
-    
-    def get_feature_importance(self) -> Dict[str, float]:
-        """
-        Get feature importance scores.
-        
-        Returns:
-            Dictionary mapping feature names to importance scores
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before getting feature importance")
-        
-        if self.feature_names is None:
-            return {f"feature_{i}": importance for i, importance in enumerate(self.model.feature_importances_)}
-        
-        return dict(zip(self.feature_names, self.model.feature_importances_))
-    
-    def evaluate(self, X: pd.DataFrame, y: pd.Series) -> Dict[str, Any]:
-        """
-        Evaluate model performance.
-        
-        Args:
-            X: Feature matrix
-            y: True labels
-            
-        Returns:
-            Dictionary containing evaluation metrics
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before evaluation")
-        
-        # Encode target if needed
-        if y.dtype == 'object' and hasattr(self.label_encoder, 'classes_'):
-            y_encoded = self.label_encoder.transform(y)
-        else:
-            y_encoded = y
-        
-        predictions = self.model.predict(X)
-        
-        # Calculate metrics
-        accuracy = accuracy_score(y_encoded, predictions)
-        report = classification_report(y_encoded, predictions, output_dict=True)
-        conf_matrix = confusion_matrix(y_encoded, predictions)
-        
-        return {
-            'accuracy': accuracy,
-            'classification_report': report,
-            'confusion_matrix': conf_matrix,
-            'feature_importance': self.get_feature_importance()
-        }
-    
-    def get_model_info(self) -> Dict[str, Any]:
-        """
-        Get comprehensive model information.
-        
-        Returns:
-            Dictionary containing model information
-        """
-        if not self.is_trained:
-            return {"status": "Model not trained"}
-        
-        return {
-            "model_type": "Random Forest Classifier",
-            "parameters": {
-                "n_estimators": self.n_estimators,
-                "max_depth": self.max_depth,
-                "min_samples_split": self.min_samples_split,
-                "min_samples_leaf": self.min_samples_leaf,
-                "criterion": self.criterion,
-                "random_state": self.random_state
-            },
-            "training_metrics": {
-                "training_accuracy": self.training_accuracy,
-                "validation_accuracy": self.validation_accuracy,
-                "cross_val_mean": self.cross_val_scores.mean(),
-                "cross_val_std": self.cross_val_scores.std()
-            },
-            "data_info": {
-                "n_features": len(self.feature_names) if self.feature_names else None,
-                "feature_names": self.feature_names,
-                "n_classes": len(self.class_names),
-                "class_names": self.class_names.tolist() if hasattr(self.class_names, 'tolist') else list(self.class_names)
-            }
-        }
-    
-    def save_model(self, filepath: str) -> None:
-        """
-        Save the trained model to disk.
-        
-        Args:
-            filepath: Path to save the model
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before saving")
-        
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        # Save the model
-        joblib.dump(self, filepath)
-        print(f"Model saved to {filepath}")
-    
-    @classmethod
-    def load_model(cls, filepath: str) -> 'RandomForestClassifier':
-        """
-        Load a trained model from disk.
-        
-        Args:
-            filepath: Path to the saved model
-            
-        Returns:
-            Loaded RandomForestClassifier instance
-        """
-        return joblib.load(filepath)
+        # Aggregate predictions
+        return self._aggregate_predictions(predictions)
 
 
-def create_random_forest_example() -> tuple[RandomForestClassifier, Dict[str, Any]]:
-    """
-    Create a complete example using the Iris dataset.
+class RandomForestClassifier(BaseRandomForest):
+    """Random Forest Classifier implementation."""
     
-    Returns:
-        Tuple of (trained_model, evaluation_results)
-    """
-    from ..data.loaders import load_iris_dataset
+    def __init__(self, criterion: str = 'gini', **kwargs):
+        super().__init__(**kwargs)
+        self.criterion = criterion
+        self.classes_ = None
+        self.n_classes_ = None
+    
+    def _create_tree(self):
+        """Create a single decision tree."""
+        max_features = self._get_max_features(self.n_features_)
+        
+        return DecisionTreeClassifier(
+            criterion=self.criterion,
+            max_depth=self.max_depth,
+            min_samples_split=self.min_samples_split,
+            min_samples_leaf=self.min_samples_leaf,
+            max_features=max_features
+        )
+    
+    def _aggregate_predictions(self, predictions: np.ndarray) -> np.ndarray:
+        """Aggregate predictions using majority voting."""
+        # predictions shape: (n_estimators, n_samples)
+        n_samples = predictions.shape[1]
+        final_predictions = np.zeros(n_samples)
+        
+        for i in range(n_samples):
+            # Count votes for each class
+            sample_predictions = predictions[:, i]
+            unique_classes, counts = np.unique(sample_predictions, return_counts=True)
+            
+            # Return class with most votes
+            final_predictions[i] = unique_classes[np.argmax(counts)]
+        
+        return final_predictions
+    
+    def _calculate_oob_metric(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
+        """Calculate accuracy for OOB score."""
+        return np.mean(y_true == y_pred)
+    
+    def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]):
+        """Train the Random Forest Classifier."""
+        if isinstance(y, pd.Series):
+            y = y.values
+        
+        self.classes_ = np.unique(y)
+        self.n_classes_ = len(self.classes_)
+        
+        return super().fit(X, y)
+    
+    def predict_proba(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+        """Predict class probabilities."""
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+        
+        if not self.estimators_:
+            raise ValueError("Forest not fitted yet")
+        
+        n_samples = X.shape[0]
+        probabilities = np.zeros((n_samples, self.n_classes_))
+        
+        # Get predictions from all trees
+        for tree in self.estimators_:
+            tree_predictions = tree.predict(X)
+            
+            # Convert to probabilities (simple voting)
+            for i, pred in enumerate(tree_predictions):
+                class_idx = np.where(self.classes_ == pred)[0][0]
+                probabilities[i, class_idx] += 1
+        
+        # Normalize to get probabilities
+        probabilities /= len(self.estimators_)
+        
+        return probabilities
 
-    # Load data
-    iris_data = load_iris_dataset()
+
+class RandomForestRegressor(BaseRandomForest):
+    """Random Forest Regressor implementation."""
     
-    # Prepare features and target
-    X = iris_data.drop('species', axis=1)
-    y = iris_data['species']
+    def __init__(self, criterion: str = 'mse', **kwargs):
+        super().__init__(**kwargs)
+        self.criterion = criterion
     
-    # Create and train model
-    rf_model = RandomForestClassifier(n_estimators=50, max_depth=5, random_state=42)
-    rf_model.fit(X, y)
+    def _create_tree(self):
+        """Create a single decision tree."""
+        max_features = self._get_max_features(self.n_features_)
+        
+        return DecisionTreeRegressor(
+            criterion=self.criterion,
+            max_depth=self.max_depth,
+            min_samples_split=self.min_samples_split,
+            min_samples_leaf=self.min_samples_leaf,
+            max_features=max_features
+        )
     
-    # Evaluate model
-    evaluation_results = rf_model.evaluate(X, y)
+    def _aggregate_predictions(self, predictions: np.ndarray) -> np.ndarray:
+        """Aggregate predictions using averaging."""
+        return np.mean(predictions, axis=0)
     
-    return rf_model, evaluation_results 
+    def _calculate_oob_metric(self, y_true: np.ndarray, y_pred: np.ndarray) -> float:
+        """Calculate R² score for OOB evaluation."""
+        ss_res = np.sum((y_true - y_pred) ** 2)
+        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+        return 1 - (ss_res / ss_tot) if ss_tot != 0 else 0.0

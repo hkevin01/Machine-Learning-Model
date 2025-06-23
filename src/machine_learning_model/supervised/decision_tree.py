@@ -1,330 +1,288 @@
-"""Decision Tree Classifier implementation with comprehensive features."""
+"""
+Decision Tree implementation for classification and regression.
+"""
 
-import os
-from typing import Any, Dict, List, Optional, Tuple
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, Union
 
-import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.tree import DecisionTreeClassifier as SklearnDecisionTree
 
 
-class DecisionTreeClassifier:
-    """Enhanced Decision Tree Classifier with comprehensive features."""
+class Node:
+    """Node class for decision tree structure."""
     
-    def __init__(self, 
-                 max_depth: Optional[int] = None,
-                 min_samples_split: int = 2,
-                 min_samples_leaf: int = 1,
-                 criterion: str = "gini",
-                 random_state: int = 42):
-        """
-        Initialize Decision Tree Classifier.
-        
-        Args:
-            max_depth: Maximum depth of the tree
-            min_samples_split: Minimum samples required to split
-            min_samples_leaf: Minimum samples required at leaf node
-            criterion: Split criterion ("gini" or "entropy")
-            random_state: Random state for reproducibility
-        """
+    def __init__(self, feature: Optional[int] = None, threshold: Optional[float] = None,
+                 left=None, right=None, value: Optional[float] = None):
+        self.feature = feature      # Feature index to split on
+        self.threshold = threshold  # Threshold value for split
+        self.left = left           # Left child node
+        self.right = right         # Right child node
+        self.value = value         # Prediction value (for leaf nodes)
+    
+    def is_leaf(self) -> bool:
+        """Check if node is a leaf node."""
+        return self.value is not None
+
+
+class BaseDecisionTree(ABC):
+    """Base class for decision tree algorithms."""
+    
+    def __init__(self, max_depth: int = 10, min_samples_split: int = 2,
+                 min_samples_leaf: int = 1, random_state: Optional[int] = None):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
-        self.criterion = criterion
         self.random_state = random_state
+        self.root = None
+        self.feature_importances_ = None
         
-        # Initialize the model
-        self.model = SklearnDecisionTree(
-            max_depth=max_depth,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            criterion=criterion,
-            random_state=random_state
-        )
+        if random_state is not None:
+            np.random.seed(random_state)
+    
+    @abstractmethod
+    def _calculate_impurity(self, y: np.ndarray) -> float:
+        """Calculate impurity of a node."""
+        pass
+    
+    @abstractmethod
+    def _calculate_leaf_value(self, y: np.ndarray) -> float:
+        """Calculate the prediction value for a leaf node."""
+        pass
+    
+    def _information_gain(self, y: np.ndarray, left_indices: np.ndarray, 
+                         right_indices: np.ndarray) -> float:
+        """Calculate information gain from a split."""
+        n = len(y)
+        n_left, n_right = len(left_indices), len(right_indices)
         
-        # Training state
-        self.is_trained = False
-        self.feature_names = None
-        self.class_names = None
-        self.label_encoder = LabelEncoder()
+        if n_left == 0 or n_right == 0:
+            return 0
         
-        # Performance metrics
-        self.training_accuracy = None
-        self.validation_accuracy = None
-        self.cross_val_scores = None
+        # Calculate weighted impurity after split
+        left_impurity = self._calculate_impurity(y[left_indices])
+        right_impurity = self._calculate_impurity(y[right_indices])
         
-    def fit(self, X: pd.DataFrame, y: pd.Series, validation_split: float = 0.2) -> 'DecisionTreeClassifier':
-        """
-        Fit the Decision Tree model.
+        weighted_impurity = (n_left / n) * left_impurity + (n_right / n) * right_impurity
         
-        Args:
-            X: Feature matrix
-            y: Target variable
-            validation_split: Fraction of data to use for validation
+        # Information gain is reduction in impurity
+        parent_impurity = self._calculate_impurity(y)
+        return parent_impurity - weighted_impurity
+    
+    def _best_split(self, X: np.ndarray, y: np.ndarray) -> tuple:
+        """Find the best split for the given data."""
+        best_gain = -1
+        best_feature = None
+        best_threshold = None
+        
+        n_features = X.shape[1]
+        
+        for feature_idx in range(n_features):
+            feature_values = X[:, feature_idx]
+            thresholds = np.unique(feature_values)
             
-        Returns:
-            Self for method chaining
-        """
-        # Store feature names
-        self.feature_names = X.columns.tolist() if hasattr(X, 'columns') else None
+            for threshold in thresholds:
+                left_indices = np.where(feature_values <= threshold)[0]
+                right_indices = np.where(feature_values > threshold)[0]
+                
+                if len(left_indices) < self.min_samples_leaf or len(right_indices) < self.min_samples_leaf:
+                    continue
+                
+                gain = self._information_gain(y, left_indices, right_indices)
+                
+                if gain > best_gain:
+                    best_gain = gain
+                    best_feature = feature_idx
+                    best_threshold = threshold
         
-        # Encode target variable if needed
-        if y.dtype == 'object':
-            y_encoded = self.label_encoder.fit_transform(y)
-            self.class_names = self.label_encoder.classes_
-        else:
-            y_encoded = y
-            self.class_names = np.unique(y)
+        return best_feature, best_threshold, best_gain
+    
+    def _build_tree(self, X: np.ndarray, y: np.ndarray, depth: int = 0) -> Node:
+        """Recursively build the decision tree."""
+        n_samples, n_features = X.shape
         
-        # Split data for validation
-        X_train, X_val, y_train, y_val = train_test_split(
-            X, y_encoded, test_size=validation_split, random_state=self.random_state, stratify=y_encoded
-        )
+        # Check stopping criteria
+        if (depth >= self.max_depth or 
+            n_samples < self.min_samples_split or 
+            len(np.unique(y)) == 1):
+            leaf_value = self._calculate_leaf_value(y)
+            return Node(value=leaf_value)
         
-        # Fit the model
-        self.model.fit(X_train, y_train)
-        self.is_trained = True
+        # Find best split
+        best_feature, best_threshold, best_gain = self._best_split(X, y)
         
-        # Calculate performance metrics
-        self.training_accuracy = accuracy_score(y_train, self.model.predict(X_train))
-        self.validation_accuracy = accuracy_score(y_val, self.model.predict(X_val))
+        if best_feature is None or best_gain <= 0:
+            leaf_value = self._calculate_leaf_value(y)
+            return Node(value=leaf_value)
         
-        # Cross-validation
-        self.cross_val_scores = cross_val_score(
-            self.model, X, y_encoded, cv=5, scoring='accuracy'
-        )
+        # Split data
+        left_indices = X[:, best_feature] <= best_threshold
+        right_indices = ~left_indices
         
+        # Recursively build left and right subtrees
+        left_child = self._build_tree(X[left_indices], y[left_indices], depth + 1)
+        right_child = self._build_tree(X[right_indices], y[right_indices], depth + 1)
+        
+        return Node(feature=best_feature, threshold=best_threshold,
+                   left=left_child, right=right_child)
+    
+    def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]):
+        """Train the decision tree."""
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+        if isinstance(y, pd.Series):
+            y = y.values
+        
+        self.root = self._build_tree(X, y)
+        self._calculate_feature_importances(X, y)
         return self
     
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
-        """
-        Make predictions.
+    def _predict_sample(self, x: np.ndarray) -> float:
+        """Predict a single sample."""
+        node = self.root
         
-        Args:
-            X: Feature matrix
-            
-        Returns:
-            Predicted classes
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before making predictions")
+        while not node.is_leaf():
+            if x[node.feature] <= node.threshold:
+                node = node.left
+            else:
+                node = node.right
         
-        predictions = self.model.predict(X)
+        return node.value
+    
+    def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+        """Make predictions on new data."""
+        if isinstance(X, pd.DataFrame):
+            X = X.values
         
-        # Decode predictions if label encoder was used
-        if hasattr(self.label_encoder, 'classes_'):
-            predictions = self.label_encoder.inverse_transform(predictions)
-        
+        predictions = np.array([self._predict_sample(x) for x in X])
         return predictions
     
-    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
-        """
-        Predict class probabilities.
+    def _calculate_feature_importances(self, X: np.ndarray, y: np.ndarray):
+        """Calculate feature importances based on information gain."""
+        n_features = X.shape[1]
+        importances = np.zeros(n_features)
         
-        Args:
-            X: Feature matrix
+        def traverse_tree(node: Node, n_samples: int):
+            if node.is_leaf():
+                return
             
-        Returns:
-            Class probabilities
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before making predictions")
-        
-        return self.model.predict_proba(X)
-    
-    def get_feature_importance(self) -> Dict[str, float]:
-        """
-        Get feature importance scores.
-        
-        Returns:
-            Dictionary mapping feature names to importance scores
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before getting feature importance")
-        
-        if self.feature_names is None:
-            return {f"feature_{i}": importance for i, importance in enumerate(self.model.feature_importances_)}
-        
-        return dict(zip(self.feature_names, self.model.feature_importances_))
-    
-    def evaluate(self, X: pd.DataFrame, y: pd.Series) -> Dict[str, Any]:
-        """
-        Evaluate model performance.
-        
-        Args:
-            X: Feature matrix
-            y: True labels
+            # Calculate weighted information gain for this split
+            left_samples = np.sum(X[:, node.feature] <= node.threshold)
+            right_samples = n_samples - left_samples
             
-        Returns:
-            Dictionary containing evaluation metrics
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before evaluation")
+            if left_samples > 0 and right_samples > 0:
+                left_indices = X[:, node.feature] <= node.threshold
+                right_indices = ~left_indices
+                gain = self._information_gain(y, np.where(left_indices)[0], np.where(right_indices)[0])
+                importances[node.feature] += gain * (n_samples / len(X))
+            
+            # Recursively traverse children
+            if node.left:
+                traverse_tree(node.left, left_samples)
+            if node.right:
+                traverse_tree(node.right, right_samples)
         
-        # Encode target if needed
-        if y.dtype == 'object' and hasattr(self.label_encoder, 'classes_'):
-            y_encoded = self.label_encoder.transform(y)
+        if self.root:
+            traverse_tree(self.root, len(X))
+            # Normalize importances
+            if np.sum(importances) > 0:
+                importances = importances / np.sum(importances)
+        
+        self.feature_importances_ = importances
+    
+    def get_tree_structure(self) -> Dict[str, Any]:
+        """Get tree structure for visualization."""
+        def node_to_dict(node: Node) -> Dict[str, Any]:
+            if node.is_leaf():
+                return {"type": "leaf", "value": node.value}
+            else:
+                return {
+                    "type": "split",
+                    "feature": node.feature,
+                    "threshold": node.threshold,
+                    "left": node_to_dict(node.left),
+                    "right": node_to_dict(node.right)
+                }
+        
+        return node_to_dict(self.root) if self.root else {}
+
+
+class DecisionTreeClassifier(BaseDecisionTree):
+    """Decision Tree Classifier implementation."""
+    
+    def __init__(self, criterion: str = 'gini', **kwargs):
+        super().__init__(**kwargs)
+        self.criterion = criterion
+        self.classes_ = None
+        self.n_classes_ = None
+    
+    def _calculate_impurity(self, y: np.ndarray) -> float:
+        """Calculate impurity using Gini or Entropy."""
+        if len(y) == 0:
+            return 0
+        
+        _, counts = np.unique(y, return_counts=True)
+        probabilities = counts / len(y)
+        
+        if self.criterion == 'gini':
+            return 1 - np.sum(probabilities ** 2)
+        elif self.criterion == 'entropy':
+            # Avoid log(0) by adding small epsilon
+            return -np.sum(probabilities * np.log2(probabilities + 1e-10))
         else:
-            y_encoded = y
-        
-        predictions = self.model.predict(X)
-        
-        # Calculate metrics
-        accuracy = accuracy_score(y_encoded, predictions)
-        report = classification_report(y_encoded, predictions, output_dict=True)
-        conf_matrix = confusion_matrix(y_encoded, predictions)
-        
-        return {
-            'accuracy': accuracy,
-            'classification_report': report,
-            'confusion_matrix': conf_matrix,
-            'feature_importance': self.get_feature_importance()
-        }
+            raise ValueError(f"Unknown criterion: {self.criterion}")
     
-    def visualize_tree(self, max_depth: int = 3, figsize: Tuple[int, int] = (20, 10)) -> None:
-        """
-        Visualize the decision tree structure.
-        
-        Args:
-            max_depth: Maximum depth to visualize
-            figsize: Figure size
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before visualization")
-        
-        try:
-            from sklearn.tree import plot_tree
-            
-            plt.figure(figsize=figsize)
-            plot_tree(
-                self.model,
-                feature_names=self.feature_names,
-                class_names=self.class_names,
-                filled=True,
-                rounded=True,
-                max_depth=max_depth
-            )
-            plt.title("Decision Tree Visualization")
-            plt.show()
-        except ImportError:
-            print("sklearn.tree.plot_tree requires matplotlib. Please install matplotlib for visualization.")
+    def _calculate_leaf_value(self, y: np.ndarray) -> float:
+        """Return the most common class in the leaf."""
+        values, counts = np.unique(y, return_counts=True)
+        return values[np.argmax(counts)]
     
-    def plot_feature_importance(self, top_n: int = 10, figsize: Tuple[int, int] = (10, 6)) -> None:
-        """
-        Plot feature importance scores.
+    def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]):
+        """Train the decision tree classifier."""
+        if isinstance(y, pd.Series):
+            y = y.values
         
-        Args:
-            top_n: Number of top features to display
-            figsize: Figure size
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before plotting feature importance")
+        self.classes_ = np.unique(y)
+        self.n_classes_ = len(self.classes_)
         
-        importance_dict = self.get_feature_importance()
-        sorted_features = sorted(importance_dict.items(), key=lambda x: x[1], reverse=True)[:top_n]
-        
-        features, importances = zip(*sorted_features)
-        
-        plt.figure(figsize=figsize)
-        plt.barh(range(len(features)), importances)
-        plt.yticks(range(len(features)), features)
-        plt.xlabel('Feature Importance')
-        plt.title('Decision Tree Feature Importance')
-        plt.gca().invert_yaxis()
-        plt.tight_layout()
-        plt.show()
+        return super().fit(X, y)
     
-    def get_model_info(self) -> Dict[str, Any]:
-        """
-        Get comprehensive model information.
+    def predict_proba(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
+        """Predict class probabilities."""
+        # For simplicity, return one-hot probabilities
+        # In a full implementation, we'd store class distributions in leaf nodes
+        predictions = self.predict(X)
+        probabilities = np.zeros((len(predictions), self.n_classes_))
         
-        Returns:
-            Dictionary containing model information
-        """
-        if not self.is_trained:
-            return {"status": "Model not trained"}
+        for i, pred in enumerate(predictions):
+            class_idx = np.where(self.classes_ == pred)[0][0]
+            probabilities[i, class_idx] = 1.0
         
-        return {
-            "model_type": "Decision Tree Classifier",
-            "parameters": {
-                "max_depth": self.max_depth,
-                "min_samples_split": self.min_samples_split,
-                "min_samples_leaf": self.min_samples_leaf,
-                "criterion": self.criterion,
-                "random_state": self.random_state
-            },
-            "training_metrics": {
-                "training_accuracy": self.training_accuracy,
-                "validation_accuracy": self.validation_accuracy,
-                "cross_val_mean": self.cross_val_scores.mean(),
-                "cross_val_std": self.cross_val_scores.std()
-            },
-            "data_info": {
-                "n_features": len(self.feature_names) if self.feature_names else None,
-                "feature_names": self.feature_names,
-                "n_classes": len(self.class_names),
-                "class_names": self.class_names.tolist() if hasattr(self.class_names, 'tolist') else list(self.class_names)
-            }
-        }
-    
-    def save_model(self, filepath: str) -> None:
-        """
-        Save the trained model to disk.
-        
-        Args:
-            filepath: Path to save the model
-        """
-        if not self.is_trained:
-            raise ValueError("Model must be trained before saving")
-        
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        # Save the model
-        joblib.dump(self, filepath)
-        print(f"Model saved to {filepath}")
-    
-    @classmethod
-    def load_model(cls, filepath: str) -> 'DecisionTreeClassifier':
-        """
-        Load a trained model from disk.
-        
-        Args:
-            filepath: Path to the saved model
-            
-        Returns:
-            Loaded DecisionTreeClassifier instance
-        """
-        return joblib.load(filepath)
+        return probabilities
 
 
-def create_decision_tree_example() -> Tuple[DecisionTreeClassifier, Dict[str, Any]]:
-    """
-    Create a complete example using the Iris dataset.
+class DecisionTreeRegressor(BaseDecisionTree):
+    """Decision Tree Regressor implementation."""
     
-    Returns:
-        Tuple of (trained_model, evaluation_results)
-    """
-    from ..data.loaders import load_iris_dataset
-
-    # Load data
-    iris_data = load_iris_dataset()
+    def __init__(self, criterion: str = 'mse', **kwargs):
+        super().__init__(**kwargs)
+        self.criterion = criterion
     
-    # Prepare features and target
-    X = iris_data.drop('species', axis=1)
-    y = iris_data['species']
+    def _calculate_impurity(self, y: np.ndarray) -> float:
+        """Calculate impurity using MSE or MAE."""
+        if len(y) == 0:
+            return 0
+        
+        if self.criterion == 'mse':
+            mean = np.mean(y)
+            return np.mean((y - mean) ** 2)
+        elif self.criterion == 'mae':
+            median = np.median(y)
+            return np.mean(np.abs(y - median))
+        else:
+            raise ValueError(f"Unknown criterion: {self.criterion}")
     
-    # Create and train model
-    dt_model = DecisionTreeClassifier(max_depth=3, random_state=42)
-    dt_model.fit(X, y)
-    
-    # Evaluate model
-    evaluation_results = dt_model.evaluate(X, y)
-    
-    return dt_model, evaluation_results 
+    def _calculate_leaf_value(self, y: np.ndarray) -> float:
+        """Return the mean value for regression."""
+        return np.mean(y)

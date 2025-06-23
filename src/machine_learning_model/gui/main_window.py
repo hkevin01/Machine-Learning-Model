@@ -1,1060 +1,487 @@
-"""Main PyQt GUI window for machine learning framework exploration."""
+"""
+Main GUI window for Machine Learning Framework Explorer.
+Provides an interactive interface for exploring ML algorithms categorized by learning type.
+"""
 
-import sys
-import traceback
-from typing import Any, Dict, Optional
-
-import numpy as np
-import pandas as pd
-
-try:
-    from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
-    from PyQt6.QtGui import QColor, QFont, QIcon, QPainter, QPalette, QPixmap
-    from PyQt6.QtWidgets import (
-        QApplication,
-        QComboBox,
-        QDoubleSpinBox,
-        QFrame,
-        QGridLayout,
-        QGroupBox,
-        QHBoxLayout,
-        QLabel,
-        QLineEdit,
-        QMainWindow,
-        QMessageBox,
-        QProgressBar,
-        QPushButton,
-        QScrollArea,
-        QSpinBox,
-        QSplitter,
-        QTableWidget,
-        QTableWidgetItem,
-        QTabWidget,
-        QTextEdit,
-        QVBoxLayout,
-        QWidget,
-    )
-except ImportError:
-    print("PyQt6 not available. Please install PyQt6 for GUI functionality.")
-    sys.exit(1)
-
-from ..data.loaders import load_california_housing, load_iris_dataset, load_wine_dataset
-from ..data.validators import (
-    validate_housing_dataset,
-    validate_iris_dataset,
-    validate_wine_dataset,
-)
-from ..supervised.decision_tree import DecisionTreeClassifier
-from ..supervised.random_forest import RandomForestClassifier
-
-# TODO: Import SVMClassifier, XGBoostClassifier when implemented
+import tkinter as tk
+import webbrowser
+from tkinter import messagebox, scrolledtext, ttk
 
 
-class ModelTrainingThread(QThread):
-    """Thread for model training to prevent GUI freezing."""
+class MLAlgorithmInfo:
+    """Contains detailed information about ML algorithms categorized by learning type."""
     
-    training_complete = pyqtSignal(dict)
-    training_error = pyqtSignal(str)
-    
-    def __init__(self, model_class, model_params, X, y):
-        super().__init__()
-        self.model_class = model_class
-        self.model_params = model_params
-        self.X = X
-        self.y = y
-    
-    def run(self):
-        try:
-            # Create and train model
-            model = self.model_class(**self.model_params)
-            model.fit(self.X, self.y)
-            
-            # Evaluate model
-            results = model.evaluate(self.X, self.y)
-            model_info = model.get_model_info()
-            
-            self.training_complete.emit({
-                'model': model,
-                'results': results,
-                'model_info': model_info
-            })
-        except Exception as e:
-            self.training_error.emit(str(e))
-
-
-class DatasetTab(QWidget):
-    """Tab for dataset exploration and validation."""
-    
-    def __init__(self):
-        super().__init__()
-        self.datasets = {
-            'Iris': load_iris_dataset,
-            'Wine': load_wine_dataset,
-            'California Housing': load_california_housing
+    SUPERVISED_ALGORITHMS = {
+        "Linear Regression": {
+            "description": "A fundamental algorithm for predicting continuous values by finding the best linear relationship between features and target.",
+            "use_cases": "House price prediction, sales forecasting, risk assessment",
+            "pros": "Simple, interpretable, fast training, no hyperparameters",
+            "cons": "Assumes linear relationship, sensitive to outliers",
+            "complexity": "Low",
+            "type": "Regression",
+            "status": "✅ Ready for Implementation"
+        },
+        "Logistic Regression": {
+            "description": "Classification algorithm using logistic function to model probability of class membership.",
+            "use_cases": "Email spam detection, medical diagnosis, marketing response",
+            "pros": "Probabilistic output, interpretable, handles categorical features",
+            "cons": "Assumes linear decision boundary, sensitive to outliers",
+            "complexity": "Low",
+            "type": "Classification",
+            "status": "✅ Ready for Implementation"
+        },
+        "Decision Trees": {
+            "description": "Tree-like model making decisions by splitting data based on feature values to maximize information gain.",
+            "use_cases": "Credit approval, feature selection, rule extraction",
+            "pros": "Highly interpretable, handles mixed data types, no assumptions about data distribution",
+            "cons": "Prone to overfitting, unstable with small data changes",
+            "complexity": "Medium",
+            "type": "Both",
+            "status": "✅ Complete - Production Ready"
+        },
+        "Random Forest": {
+            "description": "Ensemble method combining multiple decision trees with voting/averaging to improve accuracy and reduce overfitting.",
+            "use_cases": "Feature importance ranking, general-purpose prediction, biomedical research",
+            "pros": "Reduces overfitting, handles missing values, provides feature importance, built-in cross-validation (OOB)",
+            "cons": "Less interpretable than single trees, can overfit with very noisy data",
+            "complexity": "Medium",
+            "type": "Both",
+            "status": "✅ Complete - Production Ready"
+        },
+        "Support Vector Machine": {
+            "description": "Finds optimal hyperplane to separate classes or predict values by maximizing margin between data points.",
+            "use_cases": "Text classification, image recognition, gene classification",
+            "pros": "Effective in high dimensions, memory efficient, versatile with kernels",
+            "cons": "Slow on large datasets, sensitive to feature scaling, no probabilistic output",
+            "complexity": "High",
+            "type": "Both",
+            "status": "📋 Planned - Next Phase"
+        },
+        "XGBoost": {
+            "description": "Advanced gradient boosting framework optimized for speed and performance with regularization.",
+            "use_cases": "Kaggle competitions, structured data prediction, feature selection",
+            "pros": "State-of-the-art performance, built-in regularization, handles missing values",
+            "cons": "Many hyperparameters, computationally intensive, requires tuning",
+            "complexity": "High",
+            "type": "Both",
+            "status": "📋 Planned - Advanced Phase"
+        },
+        "Neural Networks": {
+            "description": "Multi-layered networks of interconnected nodes mimicking brain neurons for complex pattern recognition.",
+            "use_cases": "Image recognition, natural language processing, game playing",
+            "pros": "Universal approximator, handles complex non-linear relationships",
+            "cons": "Requires large datasets, computationally expensive, black box",
+            "complexity": "High",
+            "type": "Both",
+            "status": "📋 Planned - Advanced Phase"
         }
-        self.validators = {
-            'Iris': validate_iris_dataset,
-            'Wine': validate_wine_dataset,
-            'California Housing': validate_housing_dataset
+    }
+    
+    UNSUPERVISED_ALGORITHMS = {
+        "K-Means Clustering": {
+            "description": "Partitions data into k clusters by minimizing within-cluster sum of squares.",
+            "use_cases": "Customer segmentation, image compression, market research",
+            "pros": "Simple and fast, works well with spherical clusters",
+            "cons": "Must specify k beforehand, sensitive to initialization and outliers",
+            "complexity": "Medium",
+            "type": "Clustering",
+            "status": "📋 Planned - Phase 3"
+        },
+        "DBSCAN": {
+            "description": "Density-based clustering that groups together points in high-density areas and marks outliers.",
+            "use_cases": "Anomaly detection, image processing, social network analysis",
+            "pros": "Automatically determines clusters, handles noise, finds arbitrary shapes",
+            "cons": "Sensitive to hyperparameters, struggles with varying densities",
+            "complexity": "Medium",
+            "type": "Clustering",
+            "status": "📋 Planned - Phase 3"
+        },
+        "Principal Component Analysis": {
+            "description": "Dimensionality reduction technique that projects data onto principal components capturing maximum variance.",
+            "use_cases": "Data visualization, feature reduction, noise reduction",
+            "pros": "Reduces overfitting, speeds up training, removes multicollinearity",
+            "cons": "Loses interpretability, linear transformation only",
+            "complexity": "Medium",
+            "type": "Dimensionality Reduction",
+            "status": "📋 Planned - Phase 3"
+        },
+        "Hierarchical Clustering": {
+            "description": "Creates tree-like cluster hierarchy using linkage criteria (agglomerative or divisive).",
+            "use_cases": "Phylogenetic analysis, social network analysis, image segmentation",
+            "pros": "No need to specify number of clusters, creates interpretable hierarchy",
+            "cons": "Computationally expensive O(n³), sensitive to noise",
+            "complexity": "High",
+            "type": "Clustering",
+            "status": "📋 Planned - Phase 3"
         }
-        self.current_data = None
-        self.init_ui()
+    }
     
-    def init_ui(self):
-        """Initialize the user interface."""
-        layout = QVBoxLayout()
-        
-        # Dataset selection
-        dataset_group = QGroupBox("Dataset Selection")
-        dataset_layout = QHBoxLayout()
-        
-        self.dataset_combo = QComboBox()
-        self.dataset_combo.addItems(list(self.datasets.keys()))
-        self.dataset_combo.currentTextChanged.connect(self.load_dataset)
-        
-        self.load_btn = QPushButton("Load Dataset")
-        self.load_btn.clicked.connect(self.load_dataset)
-        
-        dataset_layout.addWidget(QLabel("Select Dataset:"))
-        dataset_layout.addWidget(self.dataset_combo)
-        dataset_layout.addWidget(self.load_btn)
-        dataset_layout.addStretch()
-        dataset_group.setLayout(dataset_layout)
-        
-        # Dataset info
-        info_group = QGroupBox("Dataset Information")
-        info_layout = QVBoxLayout()
-        
-        self.info_text = QTextEdit()
-        self.info_text.setMaximumHeight(150)
-        self.info_text.setReadOnly(True)
-        info_layout.addWidget(self.info_text)
-        info_group.setLayout(info_layout)
-        
-        # Validation results
-        validation_group = QGroupBox("Data Validation")
-        validation_layout = QVBoxLayout()
-        
-        self.validation_text = QTextEdit()
-        self.validation_text.setMaximumHeight(200)
-        self.validation_text.setReadOnly(True)
-        validation_layout.addWidget(self.validation_text)
-        validation_group.setLayout(validation_layout)
-        
-        # Data preview
-        preview_group = QGroupBox("Data Preview")
-        preview_layout = QVBoxLayout()
-        
-        self.data_table = QTableWidget()
-        self.data_table.setMaximumHeight(300)
-        preview_layout.addWidget(self.data_table)
-        preview_group.setLayout(preview_layout)
-        
-        # Add all groups to main layout
-        layout.addWidget(dataset_group)
-        layout.addWidget(info_group)
-        layout.addWidget(validation_group)
-        layout.addWidget(preview_group)
-        
-        self.setLayout(layout)
-        
-        # Load initial dataset
-        self.load_dataset()
-    
-    def load_dataset(self):
-        """Load the selected dataset."""
-        try:
-            dataset_name = self.dataset_combo.currentText()
-            load_func = self.datasets[dataset_name]
-            
-            self.current_data = load_func()
-            
-            # Update info
-            self.update_dataset_info()
-            
-            # Update validation
-            self.update_validation_results()
-            
-            # Update preview
-            self.update_data_preview()
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load dataset: {str(e)}")
-    
-    def update_dataset_info(self):
-        """Update dataset information display."""
-        if self.current_data is None:
-            return
-        
-        info = f"""
-Dataset: {self.dataset_combo.currentText()}
-Shape: {self.current_data.shape}
-Columns: {list(self.current_data.columns)}
-Data Types:
-{self.current_data.dtypes.to_string()}
+    SEMI_SUPERVISED_ALGORITHMS = {
+        "Label Propagation": {
+            "description": "Graph-based algorithm that propagates labels from labeled to unlabeled data through similarity graphs.",
+            "use_cases": "Text classification with few labels, image annotation, social media analysis",
+            "pros": "Works with few labeled examples, natural uncertainty estimation",
+            "cons": "Requires good similarity metric, computationally expensive for large graphs",
+            "complexity": "High",
+            "type": "Classification",
+            "status": "📋 Planned - Phase 4"
+        },
+        "Self-Training": {
+            "description": "Iteratively trains on labeled data, predicts unlabeled data, adds confident predictions to training set.",
+            "use_cases": "NLP with limited annotations, medical diagnosis, web page classification",
+            "pros": "Simple to implement, works with any base classifier",
+            "cons": "Can amplify errors, requires good confidence estimation",
+            "complexity": "Medium",
+            "type": "Classification",
+            "status": "📋 Planned - Phase 4"
+        },
+        "Co-Training": {
+            "description": "Uses two different views of data to train separate classifiers that teach each other.",
+            "use_cases": "Web page classification, email classification, multi-modal learning",
+            "pros": "Leverages multiple feature views, reduces overfitting",
+            "cons": "Requires conditionally independent views, complex setup",
+            "complexity": "High",
+            "type": "Classification",
+            "status": "📋 Planned - Phase 4"
+        },
+        "Semi-Supervised SVM": {
+            "description": "Extends SVM to work with both labeled and unlabeled data using transductive learning.",
+            "use_cases": "Text mining, bioinformatics, computer vision with limited labels",
+            "pros": "Leverages unlabeled data effectively, maintains SVM advantages",
+            "cons": "Non-convex optimization, computationally challenging",
+            "complexity": "High",
+            "type": "Classification",
+            "status": "📋 Planned - Phase 4"
+        }
+    }
 
-First 5 rows:
-{self.current_data.head().to_string()}
-        """
-        self.info_text.setText(info)
-    
-    def update_validation_results(self):
-        """Update validation results display."""
-        if self.current_data is None:
-            return
-        
-        try:
-            dataset_name = self.dataset_combo.currentText()
-            validator_func = self.validators[dataset_name]
-            
-            validation_results = validator_func(self.current_data)
-            
-            # Format validation results
-            validation_text = "Validation Results:\n\n"
-            
-            for result in validation_results:
-                status = "✅ PASS" if result.is_valid else "❌ FAIL"
-                validation_text += f"{status}: {result.message}\n"
-                if result.details:
-                    validation_text += f"    Details: {result.details}\n"
-                validation_text += "\n"
-            
-            self.validation_text.setText(validation_text)
-            
-        except Exception as e:
-            self.validation_text.setText(f"Validation error: {str(e)}")
-    
-    def update_data_preview(self):
-        """Update data preview table."""
-        if self.current_data is None:
-            return
-        
-        # Set up table
-        self.data_table.setRowCount(min(10, len(self.current_data)))
-        self.data_table.setColumnCount(len(self.current_data.columns))
-        self.data_table.setHorizontalHeaderLabels(self.current_data.columns)
-        
-        # Populate table
-        for i in range(min(10, len(self.current_data))):
-            for j, col in enumerate(self.current_data.columns):
-                value = str(self.current_data.iloc[i, j])
-                self.data_table.setItem(i, j, QTableWidgetItem(value))
-
-
-class SupervisedLearningTab(QWidget):
-    """Tab for supervised learning algorithms."""
+class MainWindow:
+    """Main application window with categorized algorithm display."""
     
     def __init__(self):
-        super().__init__()
-        self.current_model = None
-        self.training_thread = None
-        self.init_ui()
-    
-    def init_ui(self):
-        """Initialize the user interface."""
-        layout = QVBoxLayout()
+        self.root = tk.Tk()
+        self.root.title("Machine Learning Framework Explorer")
+        self.root.geometry("1400x900")
+        self.root.configure(bg='#f0f0f0')
         
-        # Model selection
-        model_group = QGroupBox("Model Selection")
-        model_layout = QHBoxLayout()
+        # Current selection
+        self.current_algorithm = None
+        self.current_category = None
         
-        self.model_combo = QComboBox()
-        self.model_combo.addItems(["Decision Tree", "Random Forest", "SVM", "XGBoost"])
-        self.model_combo.currentTextChanged.connect(self.update_model_params)
+        # Create main interface
+        self.create_widgets()
         
-        model_layout.addWidget(QLabel("Select Model:"))
-        model_layout.addWidget(self.model_combo)
-        model_layout.addStretch()
-        model_group.setLayout(model_layout)
+    def create_widgets(self):
+        """Create and arrange GUI widgets with categorized tabs."""
         
-        # Model parameters
-        self.params_group = QGroupBox("Model Parameters")
-        self.params_layout = QGridLayout()
-        self.params_group.setLayout(self.params_layout)
+        # Header
+        header_frame = tk.Frame(self.root, bg='#2c3e50', height=80)
+        header_frame.pack(fill='x', padx=5, pady=5)
+        header_frame.pack_propagate(False)
         
-        # Training controls
-        training_group = QGroupBox("Training")
-        training_layout = QHBoxLayout()
-        
-        self.train_btn = QPushButton("Train Model")
-        self.train_btn.clicked.connect(self.train_model)
-        
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setVisible(False)
-        
-        training_layout.addWidget(self.train_btn)
-        training_layout.addWidget(self.progress_bar)
-        training_layout.addStretch()
-        training_group.setLayout(training_layout)
-        
-        # Results
-        results_group = QGroupBox("Results")
-        results_layout = QVBoxLayout()
-        
-        self.results_text = QTextEdit()
-        self.results_text.setReadOnly(True)
-        results_layout.addWidget(self.results_text)
-        results_group.setLayout(results_layout)
-        
-        # Add all groups to main layout
-        layout.addWidget(model_group)
-        layout.addWidget(self.params_group)
-        layout.addWidget(training_group)
-        layout.addWidget(results_group)
-        
-        self.setLayout(layout)
-        
-        # Initialize model parameters
-        self.update_model_params()
-    
-    def update_model_params(self):
-        """Update model parameter controls based on selected model."""
-        # Clear existing parameters
-        for i in reversed(range(self.params_layout.count())):
-            self.params_layout.itemAt(i).widget().setParent(None)
-        
-        model_name = self.model_combo.currentText()
-        
-        if model_name == "Decision Tree":
-            self.add_decision_tree_params()
-        elif model_name == "Random Forest":
-            self.add_random_forest_params()
-        elif model_name == "SVM":
-            self.add_svm_params()
-        elif model_name == "XGBoost":
-            self.add_xgboost_params()
-    
-    def add_decision_tree_params(self):
-        """Add Decision Tree parameters."""
-        row = 0
-        
-        # Max depth
-        self.params_layout.addWidget(QLabel("Max Depth:"), row, 0)
-        self.max_depth_spin = QSpinBox()
-        self.max_depth_spin.setRange(1, 20)
-        self.max_depth_spin.setValue(3)
-        self.max_depth_spin.setSpecialValueText("None")
-        self.params_layout.addWidget(self.max_depth_spin, row, 1)
-        
-        row += 1
-        
-        # Min samples split
-        self.params_layout.addWidget(QLabel("Min Samples Split:"), row, 0)
-        self.min_samples_split_spin = QSpinBox()
-        self.min_samples_split_spin.setRange(2, 20)
-        self.min_samples_split_spin.setValue(2)
-        self.params_layout.addWidget(self.min_samples_split_spin, row, 1)
-        
-        row += 1
-        
-        # Criterion
-        self.params_layout.addWidget(QLabel("Criterion:"), row, 0)
-        self.criterion_combo = QComboBox()
-        self.criterion_combo.addItems(["gini", "entropy"])
-        self.params_layout.addWidget(self.criterion_combo, row, 1)
-    
-    def add_random_forest_params(self):
-        """Add Random Forest parameters."""
-        row = 0
-        
-        # N estimators
-        self.params_layout.addWidget(QLabel("Number of Trees:"), row, 0)
-        self.n_estimators_spin = QSpinBox()
-        self.n_estimators_spin.setRange(10, 500)
-        self.n_estimators_spin.setValue(100)
-        self.params_layout.addWidget(self.n_estimators_spin, row, 1)
-        
-        row += 1
-        
-        # Max depth
-        self.params_layout.addWidget(QLabel("Max Depth:"), row, 0)
-        self.max_depth_spin = QSpinBox()
-        self.max_depth_spin.setRange(1, 20)
-        self.max_depth_spin.setValue(5)
-        self.max_depth_spin.setSpecialValueText("None")
-        self.params_layout.addWidget(self.max_depth_spin, row, 1)
-        
-        row += 1
-        
-        # Criterion
-        self.params_layout.addWidget(QLabel("Criterion:"), row, 0)
-        self.criterion_combo = QComboBox()
-        self.criterion_combo.addItems(["gini", "entropy"])
-        self.params_layout.addWidget(self.criterion_combo, row, 1)
-    
-    def add_svm_params(self):
-        """Add SVM parameters."""
-        row = 0
-        
-        # C parameter
-        self.params_layout.addWidget(QLabel("C Parameter:"), row, 0)
-        self.c_param_spin = QDoubleSpinBox()
-        self.c_param_spin.setRange(0.1, 100.0)
-        self.c_param_spin.setValue(1.0)
-        self.c_param_spin.setDecimals(2)
-        self.params_layout.addWidget(self.c_param_spin, row, 1)
-        
-        row += 1
-        
-        # Kernel
-        self.params_layout.addWidget(QLabel("Kernel:"), row, 0)
-        self.kernel_combo = QComboBox()
-        self.kernel_combo.addItems(["rbf", "linear", "poly", "sigmoid"])
-        self.params_layout.addWidget(self.kernel_combo, row, 1)
-    
-    def add_xgboost_params(self):
-        """Add XGBoost parameters."""
-        row = 0
-        
-        # N estimators
-        self.params_layout.addWidget(QLabel("Number of Trees:"), row, 0)
-        self.n_estimators_spin = QSpinBox()
-        self.n_estimators_spin.setRange(10, 500)
-        self.n_estimators_spin.setValue(100)
-        self.params_layout.addWidget(self.n_estimators_spin, row, 1)
-        
-        row += 1
-        
-        # Learning rate
-        self.params_layout.addWidget(QLabel("Learning Rate:"), row, 0)
-        self.learning_rate_spin = QDoubleSpinBox()
-        self.learning_rate_spin.setRange(0.01, 1.0)
-        self.learning_rate_spin.setValue(0.1)
-        self.learning_rate_spin.setDecimals(3)
-        self.params_layout.addWidget(self.learning_rate_spin, row, 1)
-        
-        row += 1
-        
-        # Max depth
-        self.params_layout.addWidget(QLabel("Max Depth:"), row, 0)
-        self.max_depth_spin = QSpinBox()
-        self.max_depth_spin.setRange(1, 20)
-        self.max_depth_spin.setValue(3)
-        self.params_layout.addWidget(self.max_depth_spin, row, 1)
-    
-    def train_model(self):
-        """Train the selected model."""
-        try:
-            # Get dataset
-            iris_data = load_iris_dataset()
-            X = iris_data.drop('species', axis=1)
-            y = iris_data['species']
-            
-            # Get model parameters
-            model_name = self.model_combo.currentText()
-            params = self.get_model_params(model_name)
-            
-            # Disable training button and show progress
-            self.train_btn.setEnabled(False)
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setRange(0, 0)  # Indeterminate progress
-            
-            # Start training in separate thread
-            self.training_thread = ModelTrainingThread(
-                self.get_model_class(model_name), params, X, y
-            )
-            self.training_thread.training_complete.connect(self.on_training_complete)
-            self.training_thread.training_error.connect(self.on_training_error)
-            self.training_thread.start()
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to start training: {str(e)}")
-            self.reset_training_ui()
-    
-    def get_model_class(self, model_name: str):
-        """Get the model class for the selected model."""
-        if model_name == "Decision Tree":
-            return DecisionTreeClassifier
-        elif model_name == "Random Forest":
-            return RandomForestClassifier
-        # TODO: Add SVM and XGBoost when implemented
-        else:
-            # Placeholder fallback
-            class PlaceholderModel:
-                def __init__(self, **kwargs):
-                    self.params = kwargs
-                def fit(self, X, y):
-                    pass
-                def evaluate(self, X, y):
-                    return {'accuracy': 0.95, 'message': 'Placeholder results'}
-                def get_model_info(self):
-                    return {'model_type': model_name, 'status': 'Placeholder'}
-            return PlaceholderModel
-    
-    def get_model_params(self, model_name: str) -> Dict[str, Any]:
-        """Get model parameters from UI controls."""
-        params = {}
-        
-        if model_name == "Decision Tree":
-            params['max_depth'] = self.max_depth_spin.value() if self.max_depth_spin.value() > 0 else None
-            params['min_samples_split'] = self.min_samples_split_spin.value()
-            params['criterion'] = self.criterion_combo.currentText()
-        
-        elif model_name == "Random Forest":
-            params['n_estimators'] = self.n_estimators_spin.value()
-            params['max_depth'] = self.max_depth_spin.value() if self.max_depth_spin.value() > 0 else None
-            params['criterion'] = self.criterion_combo.currentText()
-        
-        elif model_name == "SVM":
-            params['C'] = self.c_param_spin.value()
-            params['kernel'] = self.kernel_combo.currentText()
-        
-        elif model_name == "XGBoost":
-            params['n_estimators'] = self.n_estimators_spin.value()
-            params['learning_rate'] = self.learning_rate_spin.value()
-            params['max_depth'] = self.max_depth_spin.value()
-        
-        return params
-    
-    def on_training_complete(self, results: Dict[str, Any]):
-        """Handle training completion."""
-        self.current_model = results['model']
-        
-        # Display results
-        results_text = f"""
-Training Complete!
-
-Model Information:
-{results['model_info']}
-
-Evaluation Results:
-{results['results']}
-        """
-        self.results_text.setText(results_text)
-        
-        self.reset_training_ui()
-    
-    def on_training_error(self, error_msg: str):
-        """Handle training error."""
-        QMessageBox.critical(self, "Training Error", f"Training failed: {error_msg}")
-        self.reset_training_ui()
-    
-    def reset_training_ui(self):
-        """Reset training UI elements."""
-        self.train_btn.setEnabled(True)
-        self.progress_bar.setVisible(False)
-
-
-class UnsupervisedLearningTab(QWidget):
-    """Tab for unsupervised learning algorithms."""
-    
-    def __init__(self):
-        super().__init__()
-        self.init_ui()
-    
-    def init_ui(self):
-        """Initialize the user interface."""
-        layout = QVBoxLayout()
-        
-        # Placeholder content
-        layout.addWidget(QLabel("Unsupervised Learning Algorithms"))
-        layout.addWidget(QLabel("Coming soon: K-means, DBSCAN, PCA"))
-        layout.addStretch()
-        
-        self.setLayout(layout)
-
-
-class SemiSupervisedLearningTab(QWidget):
-    """Tab for semi-supervised learning algorithms."""
-    
-    def __init__(self):
-        super().__init__()
-        self.init_ui()
-    
-    def init_ui(self):
-        """Initialize the user interface."""
-        layout = QVBoxLayout()
-        
-        # Placeholder content
-        layout.addWidget(QLabel("Semi-Supervised Learning Algorithms"))
-        layout.addWidget(QLabel("Coming soon: Label Propagation, Semi-Supervised SVM"))
-        layout.addStretch()
-        
-        self.setLayout(layout)
-
-
-class MLExplorerGUI(QMainWindow):
-    """Main GUI window for machine learning framework exploration."""
-    
-    def __init__(self):
-        super().__init__()
-        self.init_ui()
-    
-    def init_ui(self):
-        """Initialize the user interface."""
-        self.setWindowTitle("🤖 Machine Learning Framework Explorer")
-        self.setGeometry(100, 100, 1200, 800)
-        
-        # Set window icon (emoji)
-        self.setWindowIcon(self.create_emoji_icon())
-        
-        # Create central widget and layout
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        
-        # Create tab widget
-        self.tab_widget = QTabWidget()
-        
-        # Add tabs
-        self.tab_widget.addTab(DatasetTab(), "📊 Dataset Explorer")
-        self.tab_widget.addTab(SupervisedLearningTab(), "🎯 Supervised Learning")
-        self.tab_widget.addTab(UnsupervisedLearningTab(), "🔍 Unsupervised Learning")
-        self.tab_widget.addTab(SemiSupervisedLearningTab(), "🔄 Semi-Supervised Learning")
-        
-        # Set up main layout
-        layout = QVBoxLayout()
-        layout.addWidget(self.tab_widget)
-        central_widget.setLayout(layout)
-        
-        # Set up menu bar
-        self.setup_menu_bar()
-        
-        # Apply styling
-        self.apply_styling()
-    
-    def create_emoji_icon(self):
-        """Create a simple emoji icon for the window."""
-        # Create a simple colored icon
-        pixmap = QPixmap(32, 32)
-        pixmap.fill(QColor(0, 120, 212))  # Blue background
-        
-        # Create a simple robot-like icon
-        painter = QPainter(pixmap)
-        painter.setPen(QColor(255, 255, 255))  # White pen
-        painter.setBrush(QColor(255, 255, 255))  # White brush
-        
-        # Draw a simple robot face
-        painter.drawEllipse(8, 8, 16, 16)  # Head
-        painter.drawRect(12, 12, 2, 2)     # Left eye
-        painter.drawRect(18, 12, 2, 2)     # Right eye
-        painter.drawRect(14, 18, 4, 2)     # Mouth
-        
-        painter.end()
-        
-        return QIcon(pixmap)
-    
-    def setup_menu_bar(self):
-        """Set up the menu bar."""
-        menubar = self.menuBar()
-        
-        # File menu
-        file_menu = menubar.addMenu("📁 File")
-        
-        exit_action = file_menu.addAction("🚪 Exit")
-        exit_action.triggered.connect(self.close)
-        
-        # Help menu
-        help_menu = menubar.addMenu("❓ Help")
-        
-        about_action = help_menu.addAction("ℹ️ About")
-        about_action.triggered.connect(self.show_about)
-    
-    def apply_styling(self):
-        """Apply custom styling to the GUI."""
-        # Set application style
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #f8f9fa;
-            }
-            QTabWidget::pane {
-                border: 1px solid #dee2e6;
-                background-color: white;
-                border-radius: 4px;
-            }
-            QTabBar::tab {
-                background-color: #e9ecef;
-                color: #495057;
-                padding: 10px 20px;
-                margin-right: 2px;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                font-weight: 500;
-                font-size: 12px;
-            }
-            QTabBar::tab:selected {
-                background-color: white;
-                color: #0078d4;
-                border-bottom: 3px solid #0078d4;
-                font-weight: 600;
-            }
-            QTabBar::tab:hover {
-                background-color: #f8f9fa;
-                color: #212529;
-            }
-            QGroupBox {
-                font-size: 9px;
-                font-weight: 600;
-                color: #212529;
-                border: 2px solid #dee2e6;
-                border-radius: 6px;
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-                background-color: white;
-            }
-            QPushButton {
-                background-color: #007bff;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-size: 9px;
-                font-weight: 500;
-                min-height: 20px;
-            }
-            QPushButton:hover {
-                background-color: #0056b3;
-            }
-            QPushButton:pressed {
-                background-color: #004085;
-            }
-            QPushButton:disabled {
-                background-color: #6c757d;
-                color: #adb5bd;
-            }
-            QTextEdit {
-                border: 1px solid #c0c0c0;
-                border-radius: 3px;
-                padding: 8px 12px;
-                background-color: white;
-                color: #212529;
-                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-                font-size: 9px;
-                line-height: 1.4;
-                margin-right: 4px;
-                selection-background-color: #0078d4;
-                selection-color: white;
-            }
-            QTextEdit:focus {
-                border-color: #0078d4;
-                outline: none;
-            }
-            QTextEdit:disabled {
-                background-color: #f5f5f5;
-                color: #6c757d;
-            }
-            QLabel {
-                color: #212529;
-                font-size: 9px;
-                font-weight: 500;
-            }
-            QComboBox {
-                border: 1px solid #c0c0c0;
-                border-radius: 3px;
-                padding: 4px 8px;
-                background-color: white;
-                color: #212529;
-                font-size: 9px;
-                min-height: 18px;
-            }
-            QComboBox:focus {
-                border-color: #0078d4;
-                outline: none;
-            }
-            QComboBox:disabled {
-                background-color: #f5f5f5;
-                color: #6c757d;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
-                background-color: transparent;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 4px solid #666666;
-                margin-right: 4px;
-            }
-            QComboBox::down-arrow:disabled {
-                border-top-color: #999999;
-            }
-            QComboBox QAbstractItemView {
-                border: 1px solid #c0c0c0;
-                border-radius: 3px;
-                background-color: white;
-                color: #212529;
-                selection-background-color: #0078d4;
-                selection-color: white;
-                outline: none;
-                padding: 2px;
-            }
-            QComboBox QAbstractItemView::item {
-                padding: 4px 8px;
-                background-color: transparent;
-                color: #212529;
-                border-radius: 2px;
-            }
-            QComboBox QAbstractItemView::item:hover {
-                background-color: #f0f0f0;
-                color: #212529;
-            }
-            QComboBox QAbstractItemView::item:selected {
-                background-color: #0078d4;
-                color: white;
-            }
-            QTableWidget {
-                border: 2px solid #dee2e6;
-                border-radius: 6px;
-                background-color: white;
-                gridline-color: #dee2e6;
-                color: #212529;
-                font-size: 9px;
-                padding: 4px;
-                margin-right: 4px;
-                alternate-background-color: #f8f9fa;
-                selection-background-color: #e3f2fd;
-                selection-color: #212529;
-                outline: none;
-            }
-            QTableWidget::item {
-                padding: 4px;
-                border: none;
-                background-color: white;
-                color: #212529;
-            }
-            QTableWidget::item:selected {
-                background-color: #e3f2fd;
-                color: #212529;
-            }
-            QTableWidget::item:alternate {
-                background-color: #f8f9fa;
-                color: #212529;
-            }
-            QHeaderView::section {
-                background-color: #f8f9fa;
-                color: #212529;
-                padding: 6px;
-                border: 1px solid #dee2e6;
-                font-size: 9px;
-                font-weight: 600;
-            }
-            QHeaderView::section:hover {
-                background-color: #e9ecef;
-            }
-            QHeaderView::section:pressed {
-                background-color: #dee2e6;
-            }
-            QHeaderView {
-                background-color: #f8f9fa;
-                border: none;
-                outline: none;
-            }
-            QTableCornerButton::section {
-                background-color: #f8f9fa;
-                border: 1px solid #dee2e6;
-                border-radius: 0px;
-            }
-            QProgressBar {
-                border: 2px solid #dee2e6;
-                border-radius: 6px;
-                background-color: #f8f9fa;
-                color: #212529;
-                font-size: 9px;
-                text-align: center;
-                min-height: 20px;
-            }
-            QProgressBar::chunk {
-                background-color: #28a745;
-                border-radius: 4px;
-            }
-            QMenuBar {
-                background-color: #f8f9fa;
-                color: #212529;
-                border-bottom: 1px solid #dee2e6;
-                font-size: 9px;
-            }
-            QMenuBar::item {
-                background-color: transparent;
-                color: #212529;
-                padding: 6px 10px;
-            }
-            QMenuBar::item:selected {
-                background-color: #e3f2fd;
-                color: #212529;
-            }
-            QMenuBar::item:pressed {
-                background-color: #dee2e6;
-                color: #212529;
-            }
-            QMenu {
-                background-color: white;
-                color: #212529;
-                border: 2px solid #dee2e6;
-                border-radius: 6px;
-                padding: 4px;
-                font-size: 9px;
-            }
-            QMenu::item {
-                background-color: transparent;
-                color: #212529;
-                padding: 6px 20px;
-                border-radius: 4px;
-            }
-            QMenu::item:selected {
-                background-color: #e3f2fd;
-                color: #212529;
-            }
-            QMenu::separator {
-                height: 1px;
-                background-color: #dee2e6;
-                margin: 4px 0px;
-            }
-            QScrollBar:vertical {
-                background-color: #f0f0f0;
-                width: 12px;
-                border-radius: 6px;
-                margin: 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #c0c0c0;
-                border-radius: 6px;
-                min-height: 20px;
-                margin: 1px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #a0a0a0;
-            }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                height: 12px;
-                background-color: #f0f0f0;
-                border: 1px solid #d0d0d0;
-                border-radius: 2px;
-            }
-            QScrollBar::add-line:vertical:hover, QScrollBar::sub-line:vertical:hover {
-                background-color: #e0e0e0;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background-color: #f8f9fa;
-            }
-            QScrollBar:horizontal {
-                background-color: #f0f0f0;
-                height: 12px;
-                border-radius: 6px;
-                margin: 0px;
-            }
-            QScrollBar::handle:horizontal {
-                background-color: #c0c0c0;
-                border-radius: 6px;
-                min-width: 20px;
-                margin: 1px;
-            }
-            QScrollBar::handle:horizontal:hover {
-                background-color: #a0a0a0;
-            }
-            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-                width: 12px;
-                background-color: #f0f0f0;
-                border: 1px solid #d0d0d0;
-                border-radius: 2px;
-            }
-            QScrollBar::add-line:horizontal:hover, QScrollBar::sub-line:horizontal:hover {
-                background-color: #e0e0e0;
-            }
-            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-                background-color: #f8f9fa;
-            }
-            QLineEdit {
-                border: 1px solid #c0c0c0;
-                border-radius: 3px;
-                padding: 4px 8px;
-                background-color: white;
-                color: #212529;
-                font-size: 9px;
-                min-height: 18px;
-            }
-            QLineEdit:focus {
-                border-color: #0078d4;
-                outline: none;
-            }
-            QLineEdit:disabled {
-                background-color: #f5f5f5;
-                color: #6c757d;
-            }
-            QSpinBox, QDoubleSpinBox {
-                border: 1px solid #c0c0c0;
-                border-radius: 3px;
-                padding: 4px 8px;
-                background-color: white;
-                color: #212529;
-                font-size: 9px;
-                min-height: 18px;
-                min-width: 80px;
-            }
-            QSpinBox:focus, QDoubleSpinBox:focus {
-                border-color: #0078d4;
-                outline: none;
-            }
-            QSpinBox:disabled, QDoubleSpinBox:disabled {
-                background-color: #f5f5f5;
-                color: #6c757d;
-            }
-            QSpinBox::up-button, QDoubleSpinBox::up-button {
-                background-color: #f0f0f0;
-                border: 1px solid #c0c0c0;
-                border-radius: 2px;
-                width: 16px;
-                height: 10px;
-            }
-            QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {
-                background-color: #e0e0e0;
-            }
-            QSpinBox::down-button, QDoubleSpinBox::down-button {
-                background-color: #f0f0f0;
-                border: 1px solid #c0c0c0;
-                border-radius: 2px;
-                width: 16px;
-                height: 10px;
-            }
-            QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {
-                background-color: #e0e0e0;
-            }
-            QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
-                image: none;
-                border-left: 3px solid transparent;
-                border-right: 3px solid transparent;
-                border-bottom: 3px solid #666666;
-            }
-            QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
-                image: none;
-                border-left: 3px solid transparent;
-                border-right: 3px solid transparent;
-                border-top: 3px solid #666666;
-            }
-        """)
-    
-    def show_about(self):
-        """Show about dialog."""
-        QMessageBox.about(
-            self,
-            "ℹ️ About ML Framework Explorer",
-            "🤖 Machine Learning Framework Explorer\n\n"
-            "A comprehensive GUI for exploring different machine learning algorithms "
-            "and frameworks with interactive examples and validation tools.\n\n"
-            "Version 1.0.0"
+        title_label = tk.Label(
+            header_frame, 
+            text="🤖 Machine Learning Framework Explorer", 
+            font=('Arial', 18, 'bold'),
+            bg='#2c3e50', 
+            fg='white'
         )
+        title_label.pack(pady=20)
+        
+        # Main content area
+        main_frame = tk.Frame(self.root, bg='#f0f0f0')
+        main_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        # Left panel - Categorized algorithm tabs
+        left_frame = tk.Frame(main_frame, bg='white', width=400)
+        left_frame.pack(side='left', fill='y', padx=(0, 10))
+        left_frame.pack_propagate(False)
+        
+        # Create notebook for categories
+        self.notebook = ttk.Notebook(left_frame)
+        self.notebook.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Create tabs for each category
+        self.create_category_tabs()
+        
+        # Right panel - Algorithm details
+        right_frame = tk.Frame(main_frame, bg='white')
+        right_frame.pack(side='right', fill='both', expand=True)
+        
+        # Details text area
+        self.details_text = scrolledtext.ScrolledText(
+            right_frame,
+            wrap=tk.WORD,
+            font=('Arial', 11),
+            bg='#f8f9fa',
+            padx=15,
+            pady=15
+        )
+        self.details_text.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Button frame
+        button_frame = tk.Frame(right_frame, bg='white')
+        button_frame.pack(fill='x', padx=10, pady=10)
+        
+        # Action buttons
+        ttk.Button(
+            button_frame,
+            text="🚀 Implement Algorithm",
+            command=self.implement_algorithm
+        ).pack(side='left', padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="📊 View Examples",
+            command=self.view_examples
+        ).pack(side='left', padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="📈 Compare Performance",
+            command=self.compare_performance
+        ).pack(side='left', padx=5)
+        
+        # Show initial message
+        self.show_welcome_message()
+        
+    def create_category_tabs(self):
+        """Create tabs for different algorithm categories."""
+        
+        # Supervised Learning Tab
+        supervised_frame = ttk.Frame(self.notebook)
+        self.notebook.add(supervised_frame, text='🎯 Supervised (7)')
+        self.create_algorithm_list(supervised_frame, MLAlgorithmInfo.SUPERVISED_ALGORITHMS, 'supervised')
+        
+        # Unsupervised Learning Tab
+        unsupervised_frame = ttk.Frame(self.notebook)
+        self.notebook.add(unsupervised_frame, text='🔍 Unsupervised (4)')
+        self.create_algorithm_list(unsupervised_frame, MLAlgorithmInfo.UNSUPERVISED_ALGORITHMS, 'unsupervised')
+        
+        # Semi-Supervised Learning Tab
+        semi_supervised_frame = ttk.Frame(self.notebook)
+        self.notebook.add(semi_supervised_frame, text='🎭 Semi-Supervised (4)')
+        self.create_algorithm_list(semi_supervised_frame, MLAlgorithmInfo.SEMI_SUPERVISED_ALGORITHMS, 'semi_supervised')
+        
+    def create_algorithm_list(self, parent, algorithms, category):
+        """Create algorithm list for a specific category."""
+        
+        # Category description
+        descriptions = {
+            'supervised': "Uses labeled data to learn patterns and make predictions",
+            'unsupervised': "Finds hidden patterns in data without labels",
+            'semi_supervised': "Combines labeled and unlabeled data for learning"
+        }
+        
+        desc_label = tk.Label(
+            parent,
+            text=descriptions[category],
+            font=('Arial', 10),
+            bg='white',
+            fg='#666',
+            wraplength=350
+        )
+        desc_label.pack(pady=(10, 5), padx=10)
+        
+        # Algorithm listbox
+        listbox = tk.Listbox(
+            parent,
+            font=('Arial', 10),
+            selectmode='single',
+            bg='#f8f9fa',
+            selectbackground='#007bff',
+            selectforeground='white'
+        )
+        listbox.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        # Populate algorithm list with status
+        for algorithm, info in algorithms.items():
+            status_icon = info['status'].split()[0]
+            display_text = f"{status_icon} {algorithm}"
+            listbox.insert(tk.END, display_text)
+        
+        # Bind selection event
+        listbox.bind('<<ListboxSelect>>', 
+                    lambda event, cat=category, alg_dict=algorithms, lb=listbox: 
+                    self.on_algorithm_select(event, cat, alg_dict, lb))
+        
+    def show_welcome_message(self):
+        """Display welcome message."""
+        welcome_text = """
+🎯 Welcome to Machine Learning Framework Explorer!
 
+This interactive tool helps you explore and understand different machine learning algorithms.
+
+📋 How to use:
+1. Select an algorithm from the list on the left
+2. Read the detailed description and use cases
+3. Use the buttons below to run examples or learn more
+
+🔍 Features:
+• Detailed algorithm descriptions
+• Real-world use cases and examples
+• Pros and cons analysis
+• Complexity ratings
+• Interactive examples
+
+Select an algorithm from the list to get started! 🚀
+        """
+        self.details_text.delete(1.0, tk.END)
+        self.details_text.insert(1.0, welcome_text)
+        
+    def on_algorithm_select(self, event, category, algorithms, listbox):
+        """Handle algorithm selection."""
+        selection = listbox.curselection()
+        if not selection:
+            return
+            
+        algorithm_name = listbox.get(selection[0])[2:]  # Remove status icon
+        self.show_algorithm_details(algorithm_name, category)
+        
+    def show_algorithm_details(self, algorithm_name, category):
+        """Display detailed information about selected algorithm."""
+        if category == 'supervised':
+            algorithms = MLAlgorithmInfo.SUPERVISED_ALGORITHMS
+        elif category == 'unsupervised':
+            algorithms = MLAlgorithmInfo.UNSUPERVISED_ALGORITHMS
+        elif category == 'semi_supervised':
+            algorithms = MLAlgorithmInfo.SEMI_SUPERVISED_ALGORITHMS
+        else:
+            return
+            
+        if algorithm_name not in algorithms:
+            return
+            
+        info = algorithms[algorithm_name]
+        
+        # Enhanced details with implementation status
+        implementation_guide = ""
+        if "Complete" in info['status']:
+            implementation_guide = f"""
+🚀 IMPLEMENTATION AVAILABLE!
+
+📁 Location: src/machine_learning_model/supervised/
+📖 Examples: examples/supervised_examples/
+🧪 Tests: tests/test_supervised/
+
+⚡ Quick Start:
+```python
+from machine_learning_model.supervised import {algorithm_name.replace(' ', '')}
+
+model = {algorithm_name.replace(' ', '')}()
+model.fit(X_train, y_train)
+predictions = model.predict(X_test)
+```
+"""
+        elif "Ready" in info['status']:
+            implementation_guide = """
+📋 Ready for implementation - documentation and API design complete.
+"""
+        else:
+            implementation_guide = """
+⏳ Planned for future implementation phases.
+"""
+        
+        details_text = f"""
+🎯 {algorithm_name} ({category})
+
+📝 Description:
+{info['description']}
+
+🎯 Common Use Cases:
+{info['use_cases']}
+
+✅ Advantages:
+{info['pros']}
+
+❌ Disadvantages:
+{info['cons']}
+
+📊 Algorithm Type: {info['type']}
+🔧 Complexity: {info['complexity']}
+📈 Status: {info['status']}
+
+{implementation_guide}
+
+{'='*60}
+
+💡 Quick Tips:
+• Start with simpler algorithms (Linear/Logistic Regression) for baseline
+• Use ensemble methods (Random Forest, Gradient Boosting) for better accuracy
+• Consider your data size and computational resources
+• Always validate your model on unseen data
+
+🔍 Want to see this algorithm in action? Click 'Run Example' below!
+        """
+        
+        self.details_text.delete(1.0, tk.END)
+        self.details_text.insert(1.0, details_text)
+        
+    def implement_algorithm(self):
+        """Run an example of the selected algorithm."""
+        selection = self.get_current_selection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an algorithm first!")
+            return
+            
+        algorithm_name, category = selection
+        messagebox.showinfo(
+            "Implement Algorithm", 
+            f"Implementing example for {algorithm_name}...\n\n"
+            "This would launch an interactive example with sample data.\n"
+            "Feature coming soon! 🚀"
+        )
+        
+    def view_examples(self):
+        """Open external resources for learning."""
+        selection = self.get_current_selection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an algorithm first!")
+            return
+            
+        algorithm_name, category = selection
+        messagebox.showinfo(
+            "View Examples", 
+            f"Opening example resources for {algorithm_name}...\n\n"
+            "This would open relevant documentation, tutorials, or research papers.\n"
+            "Feature coming soon! 📚"
+        )
+        
+    def compare_performance(self):
+        """Visualize the algorithm."""
+        selection = self.get_current_selection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select an algorithm first!")
+            return
+            
+        algorithm_name, category = selection
+        messagebox.showinfo(
+            "Compare Performance", 
+            f"Comparing performance for {algorithm_name}...\n\n"
+            "This would show interactive plots and decision boundaries.\n"
+            "Feature coming soon! 📊"
+        )
+        
+    def get_current_selection(self):
+        """Get the currently selected algorithm and category."""
+        for tab in self.notebook.tabs():
+            widget = self.notebook.nametowidget(tab)
+            selection = widget.curselection()
+            if selection:
+                algorithm_name = widget.get(selection[0])[2:]  # Remove status icon
+                category = tab.split(' ')[-1][1:-1]  # Extract category from tab text
+                return (algorithm_name, category)
+                
+        return None
+        
+    def run(self):
+        """Start the GUI application."""
+        self.root.mainloop()
 
 def main():
-    """Main function to run the GUI application."""
-    app = QApplication(sys.argv)
-    
-    # Set application properties
-    app.setApplicationName("ML Framework Explorer")
-    app.setApplicationVersion("1.0.0")
-    
-    # Create and show main window
-    window = MLExplorerGUI()
-    window.show()
-    
-    # Start event loop
-    sys.exit(app.exec())
-
+    """Main entry point for the GUI application."""
+    app = MainWindow()
+    app.run()
 
 if __name__ == "__main__":
-    main() 
+    main()

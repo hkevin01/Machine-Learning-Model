@@ -1,5 +1,9 @@
-"""GUI package for machine learning model exploration."""
+"""
+GUI module for Machine Learning Framework Explorer.
+"""
 
-from .main_window import MLExplorerGUI
+__version__ = "1.0.0"
 
-__all__ = ["MLExplorerGUI"] 
+from .main_window import MainWindow
+
+__all__ = ["MainWindow"]

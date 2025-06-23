@@ -1,15 +1,11 @@
-"""Supervised learning algorithms package."""
+"""Supervised learning algorithms module."""
 
-from .decision_tree import DecisionTreeClassifier
-from .random_forest import RandomForestClassifier
-
-# TODO: Import SVMClassifier, XGBoostClassifier when implemented
-# from .svm import SVMClassifier
-# from .xgboost_model import XGBoostClassifier
+from .decision_tree import DecisionTreeClassifier, DecisionTreeRegressor
+from .random_forest import RandomForestClassifier, RandomForestRegressor
 
 __all__ = [
-    "DecisionTreeClassifier",
-    "RandomForestClassifier"
-    # "SVMClassifier",
-    # "XGBoostClassifier"
-] 
+    "DecisionTreeClassifier", 
+    "DecisionTreeRegressor",
+    "RandomForestClassifier", 
+    "RandomForestRegressor"
+]

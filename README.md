@@ -1,52 +1,70 @@
-# Machine Learning Framework
+# Machine Learning Framework - Agent Mode 🤖
 
-A comprehensive machine learning framework with implementations of supervised, unsupervised, and semi-supervised learning algorithms.
+A comprehensive, **agent-based machine learning framework** with intelligent workflow guidance and complete pipeline automation. Features both traditional algorithm exploration and AI-guided workflow navigation.
 
-## 🚀 Quick Start
+## 🌟 Key Features
 
-### Windows Setup
-```batch
-# Clone the repository
-git clone <repository-url>
-cd "Machine Learning Model"
+### 🤖 **Agent Mode** (NEW!)
+- **Intelligent ML Agent**: AI-powered assistant that guides you through the complete ML pipeline
+- **Step-by-Step Workflow**: Automated progression from data collection to model deployment
+- **Smart Recommendations**: Context-aware suggestions for each workflow step
+- **Interactive Navigator**: Comprehensive GUI with real-time progress tracking
+- **State Persistence**: Automatic saving/loading of workflow progress
 
-# Run Windows setup script
-scripts\setup_windows.bat
+### 🔬 **Traditional Mode**
+- **Algorithm Explorer**: Individual algorithm testing and comparison
+- **Performance Visualization**: Decision boundaries, feature importance, metrics
+- **Educational Examples**: Complete learning resources with explanations
 
-# Launch GUI
-scripts\run_gui_windows.bat
-```
+### 📊 **Complete ML Pipeline**
+1. **Data Collection** → Automated dataset loading and validation
+2. **Data Preprocessing** → Intelligent cleaning, encoding, and transformation
+3. **Exploratory Data Analysis** → Automated visualization and statistical analysis
+4. **Feature Engineering** → Smart feature scaling and selection
+5. **Data Splitting** → Intelligent train/validation/test splitting
+6. **Algorithm Selection** → Automatic algorithm recommendation
+7. **Model Training** → Automated training with multiple algorithms
+8. **Model Evaluation** → Comprehensive performance analysis
+9. **Hyperparameter Tuning** → Automated optimization framework
+10. **Model Deployment** → Production-ready model persistence
+11. **Monitoring** → Continuous learning and drift detection
 
-### Ubuntu/Linux Setup
+## 🚀 Quick Start - Agent Mode
+
+### Option 1: Launch Agent Mode (Recommended)
 ```bash
-# Clone the repository
+# Clone and setup
 git clone <repository-url>
 cd "Machine Learning Model"
 
-# Make scripts executable
-chmod +x scripts/*.sh
-
-# Run Ubuntu setup script
-./scripts/setup_ubuntu.sh
-
-# Launch GUI
-./scripts/run_gui.sh
+# Launch agent mode directly
+./run_agent.sh        # Linux/Mac
+# or
+run_agent.bat         # Windows
 ```
 
-## 🔧 Manual Setup
+### Option 2: Traditional GUI
+```bash
+# Launch traditional algorithm explorer
+./run_gui.sh          # Linux/Mac
+# or 
+scripts\run_gui_windows.bat  # Windows
+```
 
-### Prerequisites
-- Python 3.8 or higher
-- pip package manager
-- Git
+## �️ Installation
 
-### Installation Steps
+### Quick Setup Scripts
 
-1. **Create Virtual Environment**
-   ```bash
-   # Windows
-   python -m venv venv
-   venv\Scripts\activate.bat
+**Windows:**
+```batch
+scripts\setup_windows.bat
+```
+
+**Ubuntu/Linux:**
+```bash
+chmod +x scripts/*.sh
+./scripts/setup_ubuntu.sh
+```
    
    # Ubuntu/Linux
    python3 -m venv venv

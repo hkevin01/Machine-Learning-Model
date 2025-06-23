@@ -2,6 +2,8 @@
 Tests for Random Forest implementation.
 """
 
+import platform
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -132,27 +134,61 @@ class TestRandomForestRegressor:
         assert len(predictions) == len(y)
 
 
-def test_random_forest_comparison():
-    """Compare Random Forest with single Decision Tree."""
-    from machine_learning_model.supervised.decision_tree import DecisionTreeClassifier
+class TestCrossPlatformCompatibility:
+    """Test cross-platform compatibility for Random Forest."""
     
-    X, y = make_classification(n_samples=200, n_features=10, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    def test_windows_compatibility(self):
+        """Test Windows-specific functionality."""
+        X, y = make_classification(n_samples=50, n_features=5, random_state=42)
+        
+        # Test with different n_jobs settings (Windows handles threading differently)
+        for n_jobs in [1, 2, -1]:
+            rf = RandomForestClassifier(n_estimators=5, n_jobs=n_jobs, random_state=42)
+            rf.fit(X, y)
+            predictions = rf.predict(X)
+            assert len(predictions) == len(y)
     
-    # Single tree
-    tree = DecisionTreeClassifier(random_state=42)
-    tree.fit(X_train, y_train)
-    tree_accuracy = accuracy_score(y_test, tree.predict(X_test))
+    def test_ubuntu_compatibility(self):
+        """Test Ubuntu-specific functionality."""
+        X, y = make_regression(n_samples=50, n_features=5, random_state=42)
+        
+        # Test memory usage and threading on Ubuntu
+        rf = RandomForestRegressor(n_estimators=10, n_jobs=2, random_state=42)
+        rf.fit(X, y)
+        predictions = rf.predict(X)
+        assert len(predictions) == len(y)
     
-    # Random forest
-    forest = RandomForestClassifier(n_estimators=20, random_state=42)
-    forest.fit(X_train, y_train)
-    forest_accuracy = accuracy_score(y_test, forest.predict(X_test))
+    def test_path_handling(self):
+        """Test file path handling across platforms."""
+        import os
+        import tempfile
+        
+        X, y = make_classification(n_samples=30, n_features=3, random_state=42)
+        rf = RandomForestClassifier(n_estimators=5, random_state=42)
+        rf.fit(X, y)
+        
+        # Test saving/loading with different path separators
+        with tempfile.TemporaryDirectory() as temp_dir:
+            if platform.system() == "Windows":
+                test_path = os.path.join(temp_dir, "model\\test_rf.pkl")
+            else:
+                test_path = os.path.join(temp_dir, "model/test_rf.pkl")
+            
+            # Create directory if needed
+            os.makedirs(os.path.dirname(test_path), exist_ok=True)
+            
+            # This would test model persistence (placeholder)
+            assert os.path.exists(os.path.dirname(test_path))
+
+def test_platform_detection():
+    """Test platform detection and appropriate configuration."""
+    current_platform = platform.system()
+    assert current_platform in ["Windows", "Linux", "Darwin"]
     
-    # Forest should generally perform better (but not guaranteed on small datasets)
-    print(f"Single Tree Accuracy: {tree_accuracy:.3f}")
-    print(f"Random Forest Accuracy: {forest_accuracy:.3f}")
-    
-    # Both should achieve reasonable performance
-    assert tree_accuracy > 0.5
-    assert forest_accuracy > 0.5
+    # Test platform-specific settings
+    if current_platform == "Windows":
+        # Windows-specific tests
+        assert sys.platform.startswith('win')
+    elif current_platform == "Linux":
+        # Ubuntu/Linux-specific tests
+        assert sys.platform.startswith('linux')

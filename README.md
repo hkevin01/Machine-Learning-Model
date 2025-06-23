@@ -1,81 +1,107 @@
-# Machine Learning Model
+# Machine Learning Framework
 
-A comprehensive machine learning framework with interactive GUI for exploring different algorithms and datasets.
+A comprehensive machine learning framework with implementations of supervised, unsupervised, and semi-supervised learning algorithms.
 
-## Features
+## 🚀 Quick Start
 
-- 🤖 **Interactive GUI**: PyQt6-based interface with emoji icons
-- 📊 **Dataset Explorer**: Load and validate datasets (Iris, Wine, California Housing)
-- 🎯 **Supervised Learning**: Decision Trees, Random Forest (SVM, XGBoost coming soon)
-- 🔍 **Unsupervised Learning**: Coming soon (K-means, DBSCAN, PCA)
-- 🔄 **Semi-Supervised Learning**: Coming soon (Label Propagation, Semi-Supervised SVM)
-- ✅ **Data Validation**: Comprehensive validation framework
-- 🧪 **Testing**: Full test suite with coverage reporting
+### Windows Setup
+```batch
+# Clone the repository
+git clone <repository-url>
+cd "Machine Learning Model"
 
-## Quick Start
+# Run Windows setup script
+scripts\setup_windows.bat
 
-### 1. Setup Environment
+# Launch GUI
+scripts\run_gui_windows.bat
+```
 
+### Ubuntu/Linux Setup
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd "Machine Learning Model"
 
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Make scripts executable
+chmod +x scripts/*.sh
 
-# Install dependencies
-pip install -r requirements.txt
+# Run Ubuntu setup script
+./scripts/setup_ubuntu.sh
+
+# Launch GUI
+./scripts/run_gui.sh
 ```
 
-### 2. Run the GUI
+## 🔧 Manual Setup
 
+### Prerequisites
+- Python 3.8 or higher
+- pip package manager
+- Git
+
+### Installation Steps
+
+1. **Create Virtual Environment**
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate.bat
+   
+   # Ubuntu/Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   pip install numpy pandas scikit-learn matplotlib seaborn plotly
+   pip install pytest pytest-cov black isort mypy flake8  # Dev dependencies
+   ```
+
+3. **Validate Setup**
+   ```bash
+   python scripts/validate_setup.py
+   ```
+
+## 🧪 Testing
+
+### Run All Tests
 ```bash
-# Run the GUI application
-python run_gui.py
+# Windows
+scripts\run_tests_windows.bat
 
-# Or run directly (alternative method)
-python -m src.machine_learning_model.gui.main_window
-```
+# Ubuntu/Linux  
+./scripts/run_tests.sh
 
-### 3. Run Tests
-
-```bash
-# Run comprehensive test suite
-./scripts/run_comprehensive_tests.sh
-
-# Or run tests manually
+# Manual
 python -m pytest tests/ -v
 ```
 
-## GUI Features
+### Cross-Platform Compatibility Tests
+```bash
+python -m pytest tests/test_platform_compatibility.py -v
+```
 
-### 🤖 Main Window
-- **Window Title**: "🤖 Machine Learning Framework Explorer"
-- **Custom Icon**: Robot-themed application icon
-- **Emoji Tabs**: Visual indicators for different sections
+## 🖥️ Platform Support
 
-### 📊 Dataset Explorer Tab
-- Load and preview datasets
-- Real-time data validation
-- Dataset information display
-- Data quality checks
+### ✅ Windows
+- Windows 10/11
+- Python 3.8+
+- Batch scripts for automation
+- GUI support with tkinter
 
-### 🎯 Supervised Learning Tab
-- Model selection (Decision Tree, Random Forest)
-- Parameter configuration
-- Training with progress indication
-- Results display and evaluation
+### ✅ Ubuntu/Linux
+- Ubuntu 18.04+, other Linux distributions
+- Python 3.8+
+- Shell scripts for automation
+- GUI support with tkinter
 
-### 🔍 Unsupervised Learning Tab
-- Coming soon: K-means, DBSCAN, PCA
+### ⚠️ macOS
+- Basic support (not fully tested)
+- Use Linux/Unix scripts
 
-### 🔄 Semi-Supervised Learning Tab
-- Coming soon: Label Propagation, Semi-Supervised SVM
-
-## Project Structure
-
+## 📁 Project Structure
 ```
 Machine Learning Model/
 ├── src/machine_learning_model/

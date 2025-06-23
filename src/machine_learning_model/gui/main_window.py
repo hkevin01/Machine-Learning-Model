@@ -3,6 +3,9 @@ Main GUI window for Machine Learning Framework Explorer.
 Provides an interactive interface for exploring ML algorithms categorized by learning type.
 """
 
+import os
+import subprocess
+import sys
 import tkinter as tk
 import webbrowser
 from tkinter import messagebox, scrolledtext, ttk
@@ -55,7 +58,7 @@ class MLAlgorithmInfo:
             "cons": "Slow on large datasets, sensitive to feature scaling, no probabilistic output",
             "complexity": "High",
             "type": "Both",
-            "status": "📋 Planned - Next Phase"
+            "status": "🔄 Next - Starting this week"
         },
         "XGBoost": {
             "description": "Advanced gradient boosting framework optimized for speed and performance with regularization.",
@@ -164,9 +167,10 @@ class MainWindow:
         self.root.geometry("1400x900")
         self.root.configure(bg='#f0f0f0')
         
-        # Current selection
+        # Current selection tracking
         self.current_algorithm = None
         self.current_category = None
+        self.listbox_widgets = {}  # Store references to listbox widgets
         
         # Create main interface
         self.create_widgets()
@@ -226,8 +230,8 @@ class MainWindow:
         # Action buttons
         ttk.Button(
             button_frame,
-            text="🚀 Implement Algorithm",
-            command=self.implement_algorithm
+            text="🚀 Run Algorithm",
+            command=self.run_algorithm
         ).pack(side='left', padx=5)
         
         ttk.Button(
@@ -238,7 +242,13 @@ class MainWindow:
         
         ttk.Button(
             button_frame,
-            text="📈 Compare Performance",
+            text="📈 Visualize Algorithm",
+            command=self.visualize_algorithm
+        ).pack(side='left', padx=5)
+        
+        ttk.Button(
+            button_frame,
+            text="🔬 Compare Performance",
             command=self.compare_performance
         ).pack(side='left', padx=5)
         
@@ -294,6 +304,9 @@ class MainWindow:
         )
         listbox.pack(fill='both', expand=True, padx=10, pady=5)
         
+        # Store reference to listbox
+        self.listbox_widgets[category] = listbox
+        
         # Populate algorithm list with status
         for algorithm, info in algorithms.items():
             status_icon = info['status'].split()[0]
@@ -305,54 +318,35 @@ class MainWindow:
                     lambda event, cat=category, alg_dict=algorithms, lb=listbox: 
                     self.on_algorithm_select(event, cat, alg_dict, lb))
         
-    def show_welcome_message(self):
-        """Display welcome message."""
-        welcome_text = """
-🎯 Welcome to Machine Learning Framework Explorer!
-
-This interactive tool helps you explore and understand different machine learning algorithms.
-
-📋 How to use:
-1. Select an algorithm from the list on the left
-2. Read the detailed description and use cases
-3. Use the buttons below to run examples or learn more
-
-🔍 Features:
-• Detailed algorithm descriptions
-• Real-world use cases and examples
-• Pros and cons analysis
-• Complexity ratings
-• Interactive examples
-
-Select an algorithm from the list to get started! 🚀
-        """
-        self.details_text.delete(1.0, tk.END)
-        self.details_text.insert(1.0, welcome_text)
-        
     def on_algorithm_select(self, event, category, algorithms, listbox):
         """Handle algorithm selection."""
         selection = listbox.curselection()
         if not selection:
             return
             
-        algorithm_name = listbox.get(selection[0])[2:]  # Remove status icon
-        self.show_algorithm_details(algorithm_name, category)
+        # Get algorithm name (remove status icon)
+        selected_text = listbox.get(selection[0])
+        algorithm_name = ' '.join(selected_text.split()[1:])  # Remove first word (status icon)
         
-    def show_algorithm_details(self, algorithm_name, category):
+        # Store current selection
+        self.current_algorithm = algorithm_name
+        self.current_category = category
+        
+        self.show_algorithm_details(algorithm_name, algorithms, category)
+        
+    def show_algorithm_details(self, algorithm_name, algorithms, category):
         """Display detailed information about selected algorithm."""
-        if category == 'supervised':
-            algorithms = MLAlgorithmInfo.SUPERVISED_ALGORITHMS
-        elif category == 'unsupervised':
-            algorithms = MLAlgorithmInfo.UNSUPERVISED_ALGORITHMS
-        elif category == 'semi_supervised':
-            algorithms = MLAlgorithmInfo.SEMI_SUPERVISED_ALGORITHMS
-        else:
-            return
-            
         if algorithm_name not in algorithms:
             return
             
         info = algorithms[algorithm_name]
+        
+        # Category names for display
+        category_names = {
+            'supervised': "Supervised Learning",
+            'unsupervised': "Unsupervised Learning", 
+            'semi_supervised': "Semi-Supervised Learning"
+        }
         
         # Enhanced details with implementation status
         implementation_guide = ""
@@ -383,7 +377,7 @@ predictions = model.predict(X_test)
 """
         
         details_text = f"""
-🎯 {algorithm_name} ({category})
+🎯 {algorithm_name} ({category_names[category]})
 
 📝 Description:
 {info['description']}
@@ -411,69 +405,309 @@ predictions = model.predict(X_test)
 • Consider your data size and computational resources
 • Always validate your model on unseen data
 
-🔍 Want to see this algorithm in action? Click 'Run Example' below!
+🔍 Want to see this algorithm in action? Click 'Implement Algorithm' below!
         """
         
         self.details_text.delete(1.0, tk.END)
         self.details_text.insert(1.0, details_text)
         
-    def implement_algorithm(self):
-        """Run an example of the selected algorithm."""
-        selection = self.get_current_selection()
-        if not selection:
-            messagebox.showwarning("No Selection", "Please select an algorithm first!")
-            return
-            
-        algorithm_name, category = selection
-        messagebox.showinfo(
-            "Implement Algorithm", 
-            f"Implementing example for {algorithm_name}...\n\n"
-            "This would launch an interactive example with sample data.\n"
-            "Feature coming soon! 🚀"
-        )
-        
-    def view_examples(self):
-        """Open external resources for learning."""
-        selection = self.get_current_selection()
-        if not selection:
-            messagebox.showwarning("No Selection", "Please select an algorithm first!")
-            return
-            
-        algorithm_name, category = selection
-        messagebox.showinfo(
-            "View Examples", 
-            f"Opening example resources for {algorithm_name}...\n\n"
-            "This would open relevant documentation, tutorials, or research papers.\n"
-            "Feature coming soon! 📚"
-        )
-        
-    def compare_performance(self):
-        """Visualize the algorithm."""
-        selection = self.get_current_selection()
-        if not selection:
-            messagebox.showwarning("No Selection", "Please select an algorithm first!")
-            return
-            
-        algorithm_name, category = selection
-        messagebox.showinfo(
-            "Compare Performance", 
-            f"Comparing performance for {algorithm_name}...\n\n"
-            "This would show interactive plots and decision boundaries.\n"
-            "Feature coming soon! 📊"
-        )
+    def show_welcome_message(self):
+        """Display welcome message."""
+        welcome_text = """
+🎯 Welcome to Machine Learning Framework Explorer!
+
+This interactive tool helps you explore and understand different machine learning algorithms.
+
+📋 How to use:
+1. Select an algorithm from the tabs on the left
+2. Read the detailed description and use cases
+3. Use the buttons below to implement or learn more
+
+🔍 Features:
+• Detailed algorithm descriptions
+• Real-world use cases and examples  
+• Pros and cons analysis
+• Complexity ratings
+• Implementation status tracking
+
+🚀 Current Status:
+✅ Decision Trees - Complete and Ready
+✅ Random Forest - Complete and Ready
+🔄 Support Vector Machine - Next Target
+
+Select an algorithm from the tabs to get started! 🚀
+        """
+        self.details_text.delete(1.0, tk.END)
+        self.details_text.insert(1.0, welcome_text)
         
     def get_current_selection(self):
         """Get the currently selected algorithm and category."""
-        for tab in self.notebook.tabs():
-            widget = self.notebook.nametowidget(tab)
-            selection = widget.curselection()
-            if selection:
-                algorithm_name = widget.get(selection[0])[2:]  # Remove status icon
-                category = tab.split(' ')[-1][1:-1]  # Extract category from tab text
-                return (algorithm_name, category)
-                
-        return None
+        if self.current_algorithm and self.current_category:
+            return self.current_algorithm, self.current_category
+        return None, None
         
+    def run_algorithm(self):
+        """Run the selected algorithm with demo data."""
+        algorithm, category = self.get_current_selection()
+        if not algorithm:
+            messagebox.showwarning("No Selection", "Please select an algorithm first!")
+            return
+        
+        # Check if implementation is available
+        if category == 'supervised':
+            algorithms = MLAlgorithmInfo.SUPERVISED_ALGORITHMS
+        elif category == 'unsupervised':
+            algorithms = MLAlgorithmInfo.UNSUPERVISED_ALGORITHMS
+        else:
+            algorithms = MLAlgorithmInfo.SEMI_SUPERVISED_ALGORITHMS
+            
+        status = algorithms[algorithm]['status']
+        
+        if "Complete" in status:
+            try:
+                # Import and run algorithm demo
+                from machine_learning_model.visualization.algorithm_visualizer import (
+                    run_algorithm_demo,
+                )
+                
+                messagebox.showinfo(
+                    "Running Algorithm",
+                    f"🚀 Running {algorithm} with demo data...\n\n"
+                    f"This will:\n"
+                    f"• Load appropriate demo dataset\n"
+                    f"• Train the {algorithm} model\n"
+                    f"• Generate performance visualizations\n"
+                    f"• Show results in new window\n\n"
+                    f"Please wait..."
+                )
+                
+                # Run the demo
+                results = run_algorithm_demo(algorithm)
+                
+                # Show results
+                result_message = f"✅ {algorithm} completed successfully!\n\n"
+                
+                if 'accuracy' in results:
+                    result_message += f"📊 Accuracy: {results['accuracy']:.3f}\n"
+                if 'r2_score' in results:
+                    result_message += f"📊 R² Score: {results['r2_score']:.3f}\n"
+                if 'oob_score' in results:
+                    result_message += f"📊 OOB Score: {results['oob_score']:.3f}\n"
+                
+                result_message += f"\n📁 Visualization saved to:\ntest-outputs/artifacts/{algorithm.lower().replace(' ', '_')}_demo.png"
+                
+                messagebox.showinfo("Algorithm Results", result_message)
+                
+            except Exception as e:
+                messagebox.showerror(
+                    "Execution Error",
+                    f"❌ Failed to run {algorithm}:\n\n{str(e)}\n\n"
+                    f"Please check that all dependencies are installed."
+                )
+        
+        elif "Ready" in status:
+            messagebox.showinfo(
+                "Implementation Coming Soon",
+                f"📋 {algorithm} implementation is ready!\n\n"
+                f"The algorithm will be implemented soon.\n"
+                f"Documentation and API design are complete.\n\n"
+                f"🔄 Status: Ready for development"
+            )
+        else:
+            messagebox.showinfo(
+                "Planned Implementation",
+                f"⏳ {algorithm} is planned for future phases.\n\n"
+                f"Check the project roadmap for timeline details.\n\n"
+                f"📅 Estimated timeline: See project_plan.md"
+            )
+    
+    def view_examples(self):
+        """Open and run example files for the selected algorithm."""
+        algorithm, category = self.get_current_selection()
+        if not algorithm:
+            messagebox.showwarning("No Selection", "Please select an algorithm first!")
+            return
+        
+        # Map algorithm names to example files
+        example_mapping = {
+            'Decision Trees': 'decision_tree_example.py',
+            'Random Forest': 'random_forest_example.py', 
+            'Linear Regression': 'linear_regression_example.py',
+            'Logistic Regression': 'logistic_regression_example.py'
+        }
+        
+        if algorithm in example_mapping:
+            example_file = example_mapping[algorithm]
+            example_path = f"examples/supervised_examples/{example_file}"
+            
+            if os.path.exists(example_path):
+                # Ask user if they want to run the example
+                response = messagebox.askyesno(
+                    "Run Example",
+                    f"📖 {algorithm} Example Available!\n\n"
+                    f"📁 File: {example_path}\n\n"
+                    f"Would you like to run this example now?\n\n"
+                    f"📊 This will:\n"
+                    f"• Load multiple datasets\n"
+                    f"• Train and evaluate the algorithm\n"
+                    f"• Generate detailed visualizations\n"
+                    f"• Show performance analysis"
+                )
+                
+                if response:
+                    try:
+                        # Run the example script
+                        messagebox.showinfo(
+                            "Running Example",
+                            f"🚀 Running {algorithm} example...\n\n"
+                            f"This may take a few moments.\n"
+                            f"Check the console for progress and results."
+                        )
+                        
+                        # Execute the example script
+                        result = subprocess.run([sys.executable, example_path], 
+                                              capture_output=True, text=True, cwd=".")
+                        
+                        if result.returncode == 0:
+                            messagebox.showinfo(
+                                "Example Completed",
+                                f"✅ {algorithm} example completed successfully!\n\n"
+                                f"📁 Check 'test-outputs/artifacts/' for visualizations\n\n"
+                                f"🖥️ Console output:\n{result.stdout[:200]}..."
+                            )
+                        else:
+                            messagebox.showerror(
+                                "Example Failed",
+                                f"❌ Example failed to run:\n\n{result.stderr[:300]}..."
+                            )
+                    
+                    except Exception as e:
+                        messagebox.showerror(
+                            "Execution Error",
+                            f"❌ Failed to run example:\n\n{str(e)}"
+                        )
+            else:
+                messagebox.showwarning(
+                    "Example Not Found",
+                    f"📁 Example file not found:\n{example_path}\n\n"
+                    f"Please ensure the examples directory is properly set up."
+                )
+        else:
+            messagebox.showinfo(
+                "Examples Coming Soon", 
+                f"📖 Examples for {algorithm}\n\n"
+                f"Examples are being developed and will include:\n"
+                f"• Jupyter notebooks with step-by-step tutorials\n"
+                f"• Python scripts with complete implementations\n"
+                f"• Real-world dataset examples\n"
+                f"• Performance comparisons\n\n"
+                f"Check back soon! 📚"
+            )
+    
+    def visualize_algorithm(self):
+        """Create interactive visualizations for the selected algorithm."""
+        algorithm, category = self.get_current_selection()
+        if not algorithm:
+            messagebox.showwarning("No Selection", "Please select an algorithm first!")
+            return
+        
+        # Check if visualization is available
+        available_visualizations = ["Decision Trees", "Random Forest", "Linear Regression", "Logistic Regression"]
+        
+        if algorithm in available_visualizations:
+            try:
+                # Import and run visualization
+                from machine_learning_model.visualization.algorithm_visualizer import (
+                    run_algorithm_demo,
+                )
+                
+                messagebox.showinfo(
+                    "Creating Visualization",
+                    f"📊 Creating {algorithm} visualization...\n\n"
+                    f"This will:\n"
+                    f"• Load demo dataset\n"
+                    f"• Train the algorithm\n"
+                    f"• Generate interactive plots\n"
+                    f"• Show decision boundaries (if applicable)\n"
+                    f"• Display performance metrics\n\n"
+                    f"Please wait..."
+                )
+                
+                # Run the visualization
+                results = run_algorithm_demo(algorithm)
+                
+                # Show completion message
+                message = f"✅ {algorithm} visualization completed!\n\n"
+                message += f"📊 Results:\n"
+                
+                if 'accuracy' in results:
+                    message += f"• Accuracy: {results['accuracy']:.3f}\n"
+                if 'r2_score' in results:
+                    message += f"• R² Score: {results['r2_score']:.3f}\n"
+                if 'oob_score' in results:
+                    message += f"• OOB Score: {results['oob_score']:.3f}\n"
+                
+                message += f"\n📁 Saved to: test-outputs/artifacts/{algorithm.lower().replace(' ', '_')}_demo.png"
+                
+                messagebox.showinfo("Visualization Complete", message)
+                
+            except Exception as e:
+                messagebox.showerror(
+                    "Visualization Error",
+                    f"❌ Failed to create visualization:\n\n{str(e)}\n\n"
+                    f"Please ensure all dependencies are installed:\n"
+                    f"• matplotlib\n• seaborn\n• scikit-learn"
+                )
+        else:
+            messagebox.showinfo(
+                "Visualization Coming Soon",
+                f"📊 Visualization for {algorithm}\n\n"
+                f"Interactive visualizations are being developed and will include:\n"
+                f"• Decision boundaries (for classification)\n"
+                f"• Feature importance plots\n"
+                f"• Performance metrics visualization\n"
+                f"• Interactive parameter exploration\n\n"
+                f"Available for: {', '.join(available_visualizations)}\n\n"
+                f"Feature coming soon for other algorithms! 📈"
+            )
+    
+    def compare_performance(self):
+        """Handle compare performance button click."""
+        algorithm, category = self.get_current_selection()
+        if not algorithm:
+            messagebox.showwarning("No Selection", "Please select an algorithm first!")
+            return
+        
+        # Check if comprehensive comparison is available
+        import os
+        comparison_file = "src/machine_learning_model/evaluation/performance_comparison.py"
+        
+        if os.path.exists(comparison_file):
+            messagebox.showinfo(
+                "Performance Comparison Available", 
+                f"📈 Performance Comparison for {algorithm}\n\n"
+                f"🚀 To run comprehensive comparison:\n"
+                f"python -m src.machine_learning_model.evaluation.performance_comparison\n\n"
+                f"📊 Available Analysis:\n"
+                f"• Cross-validation scores\n"
+                f"• Training time comparison\n"
+                f"• Multiple dataset benchmarks\n"
+                f"• Speed vs accuracy trade-offs\n"
+                f"• Comprehensive report generation\n\n"
+                f"Results saved to: test-outputs/artifacts/"
+            )
+        else:
+            messagebox.showinfo(
+                "Performance Comparison", 
+                f"📈 Performance analysis for {algorithm}\n\n"
+                f"This will show:\n"
+                f"• Benchmark results against scikit-learn\n"
+                f"• Performance on different datasets\n"
+                f"• Speed and accuracy comparisons\n"
+                f"• Hyperparameter sensitivity analysis\n\n"
+                f"Feature coming soon! 📊"
+            )
+
     def run(self):
         """Start the GUI application."""
         self.root.mainloop()

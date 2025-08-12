@@ -47,7 +47,7 @@ jobs:
             type=sha,prefix={{branch}}-
       
       - name: Build and test GUI image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: config/docker/Dockerfile.gui
@@ -61,7 +61,7 @@ jobs:
           docker run --rm test-gui:latest python -c "import PyQt6, pandas, numpy; print('✅ GUI dependencies OK')"
       
       - name: Build and push production image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: config/docker/Dockerfile

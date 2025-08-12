@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test lint format type-check clean build
+.PHONY: help install install-dev test lint format type-check clean build gui
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -47,6 +47,9 @@ clean:  ## Clean build artifacts
 
 build:  ## Build package
 	python -m build
+
+gui:  ## Run PyQt6 GUI in Docker container
+	./scripts/run_gui_docker.sh
 
 venv:  ## Create virtual environment
 	python -m venv venv

@@ -10,11 +10,25 @@ services:
     environment:
       - PYTHONPATH=/app
       - LOG_LEVEL=INFO
-    # ports:
-    #   - "8000:8000"
     depends_on:
       - redis
       - postgres
+
+  ml-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile.gui
+    image: ml-model-gui:latest
+    container_name: ml-model-gui
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_SCALE_FACTOR=1
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - ./:/app:rw
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    stdin_open: true
+    tty: true
 
   postgres:
     image: postgres:15-alpine

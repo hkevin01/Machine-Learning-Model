@@ -54,9 +54,22 @@ print(f"Performance: {result.performance_summary}")  # "R² score: 0.847 (Good f
 print(f"Recommendations: {result.recommendations}")  # ["Validate results with cross-validation", ...]
 ```
 
-## 🚀 Quick Start - Agent Mode
+## 🚀 Quick Start
 
-### Option 1: Launch Agent Mode (Recommended)
+### Option 1: Root Wrapper (Docker GUI / Utilities)
+
+The root `run.sh` now provides a unified entrypoint:
+
+```bash
+./run.sh                 # Launch GUI in Docker
+./run.sh --local         # Launch GUI natively (no Docker)
+./run.sh --headless      # Headless GUI import smoke test (Docker)
+./run.sh --rebuild       # Force rebuild the GUI image
+./run.sh --healthcheck   # Run environment & ML diagnostics
+```
+
+### Option 2: Launch Agent Mode
+
 ```bash
 # Clone and setup
 git clone <repository-url>
@@ -68,7 +81,8 @@ cd "Machine Learning Model"
 run_agent.bat         # Windows
 ```
 
-### Option 2: Traditional GUI
+### Option 3: Traditional GUI
+
 ```bash
 # Launch traditional algorithm explorer
 ./run_gui.sh          # Linux/Mac
@@ -161,7 +175,7 @@ Machine Learning Model/
 │   ├── gui/              # PyQt6 GUI application with enhanced results
 │   └── main.py           # Main application entry
 ├── data/                 # Datasets (raw, processed)
-├── docs/                 # Documentation (PROJECT_CLEANUP_SUMMARY.md, PYQT6_GUI_GUIDE.md)
+├── docs/                 # Documentation & maintenance notes
 ├── config/               # Configuration files
 │   ├── .flake8           # Linting configuration
 │   ├── mypy.ini          # Type checking configuration
@@ -174,12 +188,7 @@ Machine Learning Model/
 │   ├── env/              # Environment activation helpers (activate_venv.sh)
 │   ├── testing/          # Test scripts (test_*.py, validate_enhanced_algorithms.py)
 │   └── output/           # Test outputs and artifacts
-├── run_gui.py            # Backward-compatible stub → scripts/gui/run_gui.py
-├── run_agent.sh          # Backward-compatible stub → scripts/agent/run_agent.sh
-├── activate_venv.sh      # Backward-compatible stub → scripts/env/activate_venv.sh
-├── .flake8               # Backward-compatible stub → config/.flake8
-├── mypy.ini              # Backward-compatible stub → config/mypy.ini
-├── pytest.ini           # Backward-compatible stub → config/pytest.ini
+├── run.sh                # Unified root wrapper (Docker GUI + healthcheck)
 └── requirements.txt     # Dependencies
 ```
 
@@ -203,9 +212,11 @@ make mlflow-ui  # opens at http://localhost:5000
 
 Configure via `.env` (copy from `.env.example`):
 
-```
+```env
 MLFLOW_TRACKING_URI=http://localhost:5000
 MLFLOW_EXPERIMENT_NAME=default
+```
+
 When enabled, built-in algorithms log params & feature importances automatically.
 
 ## Data Versioning (DVC)
@@ -228,10 +239,10 @@ dvc push
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `./scripts/run_comprehensive_tests.sh`
-5. Submit a pull request
+1. Create a feature branch
+1. Make your changes (add tests where appropriate)
+1. Run: `./scripts/run_comprehensive_tests.sh`
+1. Submit a pull request
 
 ## License
 

@@ -81,12 +81,25 @@ fi
 # Change to root directory for Docker context
 cd "$ROOT"
 
-# Build image if forced or missing
-if [[ $NEED_REBUILD -eq 1 ]] || ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  echo "[build] Building image: $IMAGE"
+# Build image if forced or missing; otherwise verify CMD matches expected launcher
+EXPECTED_CMD="scripts/gui/run_gui_pyqt6_only.py"
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "[build] Image missing. Building: $IMAGE"
+  NEED_REBUILD=1
+else
+  # Inspect existing image CMD (JSON array) and detect outdated path usage
+  CURRENT_CMD=$(docker image inspect -f '{{json .Config.Cmd}}' "$IMAGE" 2>/dev/null || echo "")
+  if [[ -n "$CURRENT_CMD" && "$CURRENT_CMD" != *"$EXPECTED_CMD"* ]]; then
+    echo "[info] Detected outdated image CMD ($CURRENT_CMD); scheduling rebuild." >&2
+    NEED_REBUILD=1
+  fi
+fi
+
+if [[ $NEED_REBUILD -eq 1 ]]; then
+  echo "[build] Building image: $IMAGE (expected CMD -> $EXPECTED_CMD)"
   docker build -f Dockerfile.gui -t "$IMAGE" .
 else
-  echo "[info] Using existing image: $IMAGE"
+  echo "[info] Using existing image: $IMAGE (CMD OK)"
 fi
 
 # GPU support

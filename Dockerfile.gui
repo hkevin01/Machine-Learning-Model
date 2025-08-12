@@ -49,9 +49,10 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Copy the rest of the project
 COPY . .
 
-RUN chmod +x run_gui_pyqt6_only.py || true
+# Ensure launcher is executable (new organized path)
+RUN chmod +x scripts/gui/run_gui_pyqt6_only.py || true
 
 USER ${USERNAME}
 
 ENTRYPOINT ["/usr/bin/tini","--"]
-CMD ["python","run_gui_pyqt6_only.py"]
+CMD ["python","scripts/gui/run_gui_pyqt6_only.py"]

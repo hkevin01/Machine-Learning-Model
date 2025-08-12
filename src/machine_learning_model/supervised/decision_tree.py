@@ -5,9 +5,20 @@ Decision Tree implementation for classification and regression.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+try:  # Optional tracking
+    from ..tracking import mlflow_tracking as _tracking  # type: ignore
+except Exception:  # pragma: no cover
+    _tracking = None
+
+try:  # Structured logging
+    from ..logging_utils import get_logger  # type: ignore
+    _logger = get_logger(__name__)
+except Exception:  # pragma: no cover
+    import logging as _stdlib_logging
+    _logger = _stdlib_logging.getLogger(__name__)
 
 
 class Node:
@@ -51,8 +62,7 @@ class BaseDecisionTree(ABC):
         """Calculate the prediction value for a leaf node."""
         pass
     
-    def _information_gain(self, y: np.ndarray, left_indices: np.ndarray, 
-                         right_indices: np.ndarray) -> float:
+    def _information_gain(self, y: np.ndarray, left_indices: np.ndarray, right_indices: np.ndarray) -> float:
         """Calculate information gain from a split."""
         n = len(y)
         n_left, n_right = len(left_indices), len(right_indices)
@@ -103,9 +113,11 @@ class BaseDecisionTree(ABC):
         n_samples, n_features = X.shape
         
         # Check stopping criteria
-        if (depth >= self.max_depth or 
-            n_samples < self.min_samples_split or 
-            len(np.unique(y)) == 1):
+        if (
+            depth >= self.max_depth
+            or n_samples < self.min_samples_split
+            or len(np.unique(y)) == 1
+        ):
             leaf_value = self._calculate_leaf_value(y)
             return Node(value=leaf_value)
         
@@ -124,18 +136,59 @@ class BaseDecisionTree(ABC):
         left_child = self._build_tree(X[left_indices], y[left_indices], depth + 1)
         right_child = self._build_tree(X[right_indices], y[right_indices], depth + 1)
         
-        return Node(feature=best_feature, threshold=best_threshold,
-                   left=left_child, right=right_child)
+        return Node(
+            feature=best_feature,
+            threshold=best_threshold,
+            left=left_child,
+            right=right_child,
+        )
     
     def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]):
-        """Train the decision tree."""
+        """Train the decision tree.
+
+        Logs parameters, feature importances, and basic training metrics (accuracy / R2)
+        when MLflow tracking is enabled. Always emits structured log messages.
+        """
         if isinstance(X, pd.DataFrame):
             X = X.values
         if isinstance(y, pd.Series):
             y = y.values
-        
-        self.root = self._build_tree(X, y)
-        self._calculate_feature_importances(X, y)
+        run_ctx = None
+        if _tracking and _tracking.tracking_enabled():
+            run_ctx = _tracking.start_run()
+        if run_ctx:
+            with run_ctx:
+                _tracking.log_params({
+                    "max_depth": self.max_depth,
+                    "min_samples_split": self.min_samples_split,
+                    "min_samples_leaf": self.min_samples_leaf,
+                })
+                _logger.info(f"training_start model=DecisionTree max_depth={self.max_depth}")
+                self.root = self._build_tree(X, y)
+                self._calculate_feature_importances(X, y)
+                if self.feature_importances_ is not None:
+                    _tracking.log_feature_importances(self.feature_importances_)
+                # Metrics: compute on training data
+                try:
+                    preds = self.predict(X)
+                    # Determine task type heuristically
+                    if y.dtype.kind in {"i", "u", "b"} or len(np.unique(y)) < max(20, len(y) * 0.5):
+                        acc = float(np.mean(preds == y))
+                        _tracking.log_metrics({"train_accuracy": acc})
+                        _logger.info(f"training_metrics accuracy={acc:.4f}")
+                    else:
+                        # Regression R2
+                        ss_res = float(np.sum((y - preds) ** 2))
+                        ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+                        r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0.0
+                        _tracking.log_metrics({"train_r2": r2})
+                        _logger.info(f"training_metrics r2={r2:.4f}")
+                except Exception as e:  # pragma: no cover - metrics best effort
+                    _logger.warning(f"metric_logging_failed error={e}")
+        else:
+            self.root = self._build_tree(X, y)
+            self._calculate_feature_importances(X, y)
+            _logger.info(f"training_complete model=DecisionTree max_depth={self.max_depth}")
         return self
     
     def _predict_sample(self, x: np.ndarray) -> float:
@@ -239,7 +292,7 @@ class DecisionTreeClassifier(BaseDecisionTree):
         return values[np.argmax(counts)]
     
     def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]):
-        """Train the decision tree classifier."""
+        """Train the decision tree classifier (adds class metadata)."""
         if isinstance(y, pd.Series):
             y = y.values
         

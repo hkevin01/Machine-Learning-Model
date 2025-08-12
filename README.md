@@ -28,6 +28,8 @@ A comprehensive, **agent-based machine learning framework** with intelligent wor
 9. **Hyperparameter Tuning** → Automated optimization framework
 10. **Model Deployment** → Production-ready model persistence
 11. **Monitoring** → Continuous learning and drift detection
+12. **Experiment Tracking** → MLflow integrated lightweight logging
+13. **Data Versioning** → DVC pipeline for reproducible data & models
 
 ## 🚀 Quick Start - Agent Mode
 
@@ -51,40 +53,43 @@ run_agent.bat         # Windows
 scripts\run_gui_windows.bat  # Windows
 ```
 
-## �️ Installation
+## 🛠️ Installation
 
 ### Quick Setup Scripts
 
 **Windows:**
+
 ```batch
 scripts\setup_windows.bat
 ```
 
 **Ubuntu/Linux:**
+
 ```bash
 chmod +x scripts/*.sh
 ./scripts/setup_ubuntu.sh
+python3 -m venv venv
+source venv/bin/activate
 ```
-   
-   # Ubuntu/Linux
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
 
-2. **Install Dependencies**
-   ```bash
-   pip install numpy pandas scikit-learn matplotlib seaborn plotly
-   pip install pytest pytest-cov black isort mypy flake8  # Dev dependencies
-   ```
+### Manual Dependency Installation
 
-3. **Validate Setup**
-   ```bash
-   python scripts/validate_setup.py
-   ```
+```bash
+pip install -r requirements.txt
+# Dev extras
+pip install -r requirements-dev.txt
+```
+
+### Validate Setup
+
+```bash
+python scripts/validate_setup.py
+```
 
 ## 🧪 Testing
 
 ### Run All Tests
+
 ```bash
 # Windows
 scripts\run_tests_windows.bat
@@ -97,6 +102,7 @@ python -m pytest tests/ -v
 ```
 
 ### Cross-Platform Compatibility Tests
+
 ```bash
 python -m pytest tests/test_platform_compatibility.py -v
 ```
@@ -104,23 +110,27 @@ python -m pytest tests/test_platform_compatibility.py -v
 ## 🖥️ Platform Support
 
 ### ✅ Windows
+
 - Windows 10/11
 - Python 3.8+
 - Batch scripts for automation
 - GUI support with tkinter
 
 ### ✅ Ubuntu/Linux
+
 - Ubuntu 18.04+, other Linux distributions
 - Python 3.8+
 - Shell scripts for automation
 - GUI support with tkinter
 
 ### ⚠️ macOS
+
 - Basic support (not fully tested)
 - Use Linux/Unix scripts
 
 ## 📁 Project Structure
-```
+
+```text
 Machine Learning Model/
 ├── src/machine_learning_model/
 │   ├── data/              # Data loading and validation
@@ -136,12 +146,45 @@ Machine Learning Model/
 
 ## Development Tools
 
-- **Testing**: pytest with coverage
+- **Testing**: pytest with coverage, Hypothesis property-based tests
 - **Linting**: flake8
 - **Formatting**: black
 - **Import Sorting**: isort
-- **GUI**: PyQt6
+- **GUI**: PyQt6 (container includes DejaVu + Noto Emoji fonts for icon rendering)
 - **ML**: scikit-learn, xgboost, matplotlib, seaborn, plotly
+
+## Experiment Tracking (MLflow)
+
+Enable MLflow by installing dev dependencies and (optionally) starting a local UI:
+
+```bash
+pip install -r requirements-dev.txt
+make mlflow-ui  # opens at http://localhost:5000
+```
+
+Configure via `.env` (copy from `.env.example`):
+
+```
+MLFLOW_TRACKING_URI=http://localhost:5000
+MLFLOW_EXPERIMENT_NAME=default
+When enabled, built-in algorithms log params & feature importances automatically.
+
+## Data Versioning (DVC)
+
+A minimal pipeline is defined in `dvc.yaml` (stages: prepare, train):
+
+```bash
+pip install -r requirements-dev.txt
+make dvc-init
+dvc repro
+```
+
+Add a remote (optional):
+
+```bash
+dvc remote add -d origin <remote-url>
+dvc push
+```
 
 ## Contributing
 

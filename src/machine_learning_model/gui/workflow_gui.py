@@ -18,6 +18,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from ..workflow import MLAgent, MLWorkflow
 from ..workflow.ml_agent import WorkflowStepStatus
+from .icon_utils import icon_for_status
 
 
 class WorkflowNavigatorGUI:
@@ -431,17 +432,8 @@ class WorkflowNavigatorGUI:
             status_text = step.status.value.replace('_', ' ').title()
             progress_text = f"{step.progress*100:.0f}%"
             
-            # Determine icon based on status
-            if step.status == WorkflowStepStatus.COMPLETED:
-                icon = "✅"
-            elif step.status == WorkflowStepStatus.IN_PROGRESS:
-                icon = "🔄"
-            elif step.status == WorkflowStepStatus.FAILED:
-                icon = "❌"
-            elif step.status == WorkflowStepStatus.SKIPPED:
-                icon = "⏭️"
-            else:
-                icon = "⏳"
+            # Determine icon using helper for fallback safety
+            icon = icon_for_status(step.status.name)
             
             item_text = f"{icon} {step.name}"
             item_id = self.steps_tree.insert("", "end", text=item_text, 

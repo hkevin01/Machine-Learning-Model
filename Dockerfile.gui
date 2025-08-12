@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libx11-6 libxext6 libxrender1 libxkbcommon0 libxkbcommon-x11-0 \
     libxcb1 libxi6 libxfixes3 libxrandr2 libxcomposite1 libxtst6 \
     libgl1 libgl1-mesa-glx libglib2.0-0 libnss3 libfontconfig1 \
+    fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-noto-color-emoji \
     xauth ca-certificates git curl tini python3-tk tk && \
     rm -rf /var/lib/apt/lists/*
 

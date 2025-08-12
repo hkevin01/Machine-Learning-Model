@@ -1,13 +1,23 @@
 """Random Forest implementation for classification and regression."""
 
-import warnings
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
 
 from .decision_tree import DecisionTreeClassifier, DecisionTreeRegressor
+try:  # optional tracking
+    from ..tracking import mlflow_tracking as _tracking  # type: ignore
+except Exception:  # pragma: no cover
+    _tracking = None
+
+try:  # structured logging
+    from ..logging_utils import get_logger  # type: ignore
+    _logger = get_logger(__name__)
+except Exception:  # pragma: no cover
+    import logging as _stdlib_logging
+    _logger = _stdlib_logging.getLogger(__name__)
 
 
 class BaseRandomForest:
@@ -157,14 +167,29 @@ class BaseRandomForest:
         
         args_list = [(X, y, i, random_states[i]) for i in range(self.n_estimators)]
         
-        # Fit trees
-        if self.n_jobs == 1:
-            # Sequential processing
-            results = [self._fit_single_tree(args) for args in args_list]
+        run_ctx = None
+        if _tracking and _tracking.tracking_enabled():
+            run_ctx = _tracking.start_run()
+
+        if run_ctx:
+            with run_ctx:
+                _tracking.log_params({
+                    "n_estimators": self.n_estimators,
+                    "max_depth": self.max_depth,
+                    "bootstrap": self.bootstrap,
+                })
+                _logger.info(f"training_start model=RandomForest n_estimators={self.n_estimators}")
+                if self.n_jobs == 1:
+                    results = [self._fit_single_tree(a) for a in args_list]
+                else:
+                    with ThreadPoolExecutor(max_workers=self.n_jobs) as executor:
+                        results = list(executor.map(self._fit_single_tree, args_list))
         else:
-            # Parallel processing
-            with ThreadPoolExecutor(max_workers=self.n_jobs) as executor:
-                results = list(executor.map(self._fit_single_tree, args_list))
+            if self.n_jobs == 1:
+                results = [self._fit_single_tree(a) for a in args_list]
+            else:
+                with ThreadPoolExecutor(max_workers=self.n_jobs) as executor:
+                    results = list(executor.map(self._fit_single_tree, args_list))
         
         # Extract trees and bootstrap indices
         self.estimators_ = [result[0] for result in results]
@@ -172,13 +197,31 @@ class BaseRandomForest:
         
         # Calculate feature importances
         self._calculate_feature_importances()
+        if _tracking and _tracking.tracking_enabled() and self.feature_importances_ is not None:
+            _tracking.log_feature_importances(self.feature_importances_)
         
         # Calculate OOB score if requested
         if self.oob_score:
             self._calculate_oob_score(X, y)
         
         if self.verbose > 0:
-            print(f"Random Forest fitted with {len(self.estimators_)} trees")
+            _logger.info(f"training_complete model=RandomForest trees={len(self.estimators_)}")
+        # Log metrics if tracking enabled
+        if _tracking and _tracking.tracking_enabled():
+            try:
+                preds = self.predict(X)
+                if isinstance(self, RandomForestClassifier):
+                    acc = float(np.mean(preds == y))
+                    _tracking.log_metrics({"train_accuracy": acc})
+                    _logger.info(f"training_metrics accuracy={acc:.4f}")
+                else:  # Regressor
+                    ss_res = float(np.sum((y - preds) ** 2))
+                    ss_tot = float(np.sum((y - np.mean(y)) ** 2))
+                    r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else 0.0
+                    _tracking.log_metrics({"train_r2": r2})
+                    _logger.info(f"training_metrics r2={r2:.4f}")
+            except Exception as e:  # pragma: no cover
+                _logger.warning(f"metric_logging_failed error={e}")
         
         return self
     

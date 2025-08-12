@@ -1,0 +1,14 @@
+stages:
+  prepare:
+    cmd: python scripts/prepare_sample_data.py
+    deps:
+      - scripts/prepare_sample_data.py
+    outs:
+      - data/processed/sample_prepared.csv
+  train:
+    cmd: python scripts/train_sample_model.py
+    deps:
+      - data/processed/sample_prepared.csv
+      - src/machine_learning_model/supervised/decision_tree.py
+    outs:
+      - models/sample_decision_tree.pkl

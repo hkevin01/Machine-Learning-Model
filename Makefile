@@ -53,6 +53,15 @@ check:  ## Run all checks (lint, type-check, test)
 monitor:  ## Generate monitoring reports
 	python scripts/monitoring/generate_reports.py --use-sample-data
 
+mlflow-ui:  ## Launch MLflow UI (requires mlflow installed)
+	mlflow ui --port 5000
+
+dvc-init:  ## Initialize DVC (no-scm for lightweight example)
+	dvc init --no-scm --force || true
+
+dvc-run:  ## Execute DVC pipeline (prepare + train)
+	dvc repro
+
 docs:  ## Build documentation
 	mkdocs build
 

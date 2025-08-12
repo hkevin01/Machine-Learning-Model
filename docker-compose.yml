@@ -30,6 +30,21 @@ services:
     stdin_open: true
     tty: true
 
+  ml-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.gui
+    image: ml-model-agent:latest
+    container_name: ml-model-agent
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./:/app:rw
+    command: ["bash","-lc","./run_agent.sh"]
+    stdin_open: true
+    tty: true
+
   postgres:
     image: postgres:15-alpine
     container_name: postgres

@@ -51,5 +51,5 @@ make gui
 ## Notes
 
 - `QT_X11_NO_MITSHM=1` mitigates shared memory extension issues in some Docker/X11 combos.
-- To add Agent Mode in-container, add another service referencing `./run_agent.sh`.
+- Agent Mode container available as service `ml-agent` (run with `make agent` or `docker compose up --build ml-agent`).
 - For GPU acceleration (Linux + NVIDIA), add the appropriate `--gpus all` runtime or compose device reservations.

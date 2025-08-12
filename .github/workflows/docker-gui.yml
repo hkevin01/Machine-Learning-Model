@@ -1,0 +1,25 @@
+name: Build GUI & Agent Images
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build GUI image
+        run: docker build -f Dockerfile.gui -t ml-model-gui:ci .
+      - name: Build Agent image
+        run: docker build -f Dockerfile.gui -t ml-model-agent:ci .
+      - name: Smoke test GUI import
+        run: |
+          docker run --rm ml-model-gui:ci python -c "import PyQt6, pandas, numpy; print('Imports OK')"
+      - name: Smoke test Agent script
+        run: |
+          docker run --rm ml-model-agent:ci python -c "import machine_learning_model; print('Package OK')"

@@ -5,18 +5,20 @@
 #   ./run.sh --rebuild       # force rebuild image
 #   ./run.sh --gpu           # attempt GPU (NVIDIA) passthrough
 #   ./run.sh --headless      # run a smoke test (no X) to validate imports
+#   ./run.sh --local         # run PyQt6 GUI natively (not in Docker)
 #   ./run.sh --help          # show help
 #   ENV VARS:
-#     ML_GUI_IMAGE (default: ml-gui:latest)
+#     ML_GUI_IMAGE (default: ml-gui-pyqt6)
 #     DISPLAY (override X display)
 #
 set -euo pipefail
 
-IMAGE_DEFAULT="ml-gui:latest"
+IMAGE_DEFAULT="ml-gui-pyqt6"
 IMAGE="${ML_GUI_IMAGE:-$IMAGE_DEFAULT}"
 NEED_REBUILD=0
 USE_GPU=0
 HEADLESS=0
+LOCAL_MODE=0
 EXTRA_DOCKER_ARGS=()
 
 print_help() {
@@ -27,6 +29,7 @@ Options:
   --rebuild        Force rebuild the GUI image
   --gpu            Enable GPU (NVIDIA) passthrough (--gpus all)
   --headless       Run a headless import/self-test instead of launching the window
+  --local          Run PyQt6 GUI natively on host (not in Docker)
   --image <name>   Override image tag (default: ${IMAGE})
   --help           Show this help
 
@@ -46,6 +49,7 @@ while [[ $# -gt 0 ]]; do
     --rebuild) NEED_REBUILD=1; shift ;;
     --gpu) USE_GPU=1; shift ;;
     --headless) HEADLESS=1; shift ;;
+    --local) LOCAL_MODE=1; shift ;;
     --image) IMAGE="$2"; shift 2 ;;
     --help|-h) print_help; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; print_help; exit 1 ;;
@@ -106,6 +110,25 @@ fi
 
 # Shared memory size for more stable Qt (avoid MIT-SHM issues)
 EXTRA_DOCKER_ARGS+=( --shm-size=512m )
+
+# Local mode - run PyQt6 natively
+if [[ $LOCAL_MODE -eq 1 ]]; then
+  echo "[local] Running PyQt6 GUI natively..."
+  if command -v python3 >/dev/null 2>&1; then
+    if python3 -c "from PyQt6.QtWidgets import QApplication" 2>/dev/null; then
+      echo "[local] PyQt6 detected, launching native GUI..."
+      python3 run_gui_pyqt6.py
+      exit $?
+    else
+      echo "[local] PyQt6 not available, falling back to run_gui.py..."
+      python3 run_gui.py
+      exit $?
+    fi
+  else
+    echo "[error] Python3 not found for local mode" >&2
+    exit 1
+  fi
+fi
 
 # Run container
 echo "[run] Launching GUI container..."

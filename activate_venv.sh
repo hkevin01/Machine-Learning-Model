@@ -1,6 +1,3 @@
-#!/bin/bash
-echo "Activating virtual environment..."
-source "/home/kevin/Projects/AI MODELS/Machine Learning Model/venv/bin/activate"
-echo "✅ Virtual environment activated!"
-echo "To deactivate, run: deactivate"
-exec "$SHELL"
+# MOVED TO scripts/env/activate_venv.sh
+echo "⚠️  Deprecated: activate_venv.sh moved to scripts/env/activate_venv.sh" >&2
+exec scripts/env/activate_venv.sh

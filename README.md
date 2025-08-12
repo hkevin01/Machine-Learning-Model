@@ -31,6 +31,29 @@ A comprehensive, **agent-based machine learning framework** with intelligent wor
 12. **Experiment Tracking** → MLflow integrated lightweight logging
 13. **Data Versioning** → DVC pipeline for reproducible data & models
 
+## ✨ Enhanced Algorithm Results (NEW!)
+
+All algorithms now provide rich, detailed output including:
+
+- **⏱️ Execution Timing**: Precise performance measurement for each algorithm run
+- **🧠 Model Parameters**: Complete hyperparameter and configuration details
+- **📊 Performance Analysis**: Intelligent performance categorization (Excellent/Good/Fair/Poor)
+- **💡 Smart Recommendations**: Context-aware suggestions based on results:
+  - Feature engineering suggestions for low performance
+  - Overfitting warnings for suspiciously high accuracy
+  - Optimization recommendations for slow execution
+  - Cross-validation reminders and ensemble method suggestions
+- **📈 Detailed Metrics**: Extended metrics beyond basic accuracy/MSE
+- **🔍 Model Insights**: Algorithm-specific information (cluster counts, explained variance, etc.)
+
+### Example Enhanced Output:
+```python
+result = run_algorithm("Linear Regression", "regression", spec)
+print(f"Execution Time: {result.execution_time:.4f}s")
+print(f"Performance: {result.performance_summary}")  # "R² score: 0.847 (Good fit)"
+print(f"Recommendations: {result.recommendations}")  # ["Validate results with cross-validation", ...]
+```
+
 ## 🚀 Quick Start - Agent Mode
 
 ### Option 1: Launch Agent Mode (Recommended)
@@ -49,7 +72,7 @@ run_agent.bat         # Windows
 ```bash
 # Launch traditional algorithm explorer
 ./run_gui.sh          # Linux/Mac
-# or 
+# or
 scripts\run_gui_windows.bat  # Windows
 ```
 
@@ -94,7 +117,7 @@ python scripts/validate_setup.py
 # Windows
 scripts\run_tests_windows.bat
 
-# Ubuntu/Linux  
+# Ubuntu/Linux
 ./scripts/run_tests.sh
 
 # Manual
@@ -135,12 +158,28 @@ Machine Learning Model/
 ├── src/machine_learning_model/
 │   ├── data/              # Data loading and validation
 │   ├── supervised/        # Supervised learning algorithms
-│   ├── gui/              # PyQt6 GUI application
+│   ├── gui/              # PyQt6 GUI application with enhanced results
 │   └── main.py           # Main application entry
 ├── data/                 # Datasets (raw, processed)
+├── docs/                 # Documentation (PROJECT_CLEANUP_SUMMARY.md, PYQT6_GUI_GUIDE.md)
+├── config/               # Configuration files
+│   ├── .flake8           # Linting configuration
+│   ├── mypy.ini          # Type checking configuration
+│   └── pytest.ini       # Testing configuration
 ├── tests/                # Test suite
-├── scripts/              # Utility scripts
-├── run_gui.py           # GUI launcher script
+├── scripts/              # Organized utility scripts
+│   ├── gui/              # GUI launchers & demos (run_gui.py, demo_pyqt6_gui.py)
+│   ├── agent/            # Agent mode scripts (run_agent.sh, quick_test_agent.py)
+│   ├── docker/           # Docker wrapper scripts (run.sh)
+│   ├── env/              # Environment activation helpers (activate_venv.sh)
+│   ├── testing/          # Test scripts (test_*.py, validate_enhanced_algorithms.py)
+│   └── output/           # Test outputs and artifacts
+├── run_gui.py            # Backward-compatible stub → scripts/gui/run_gui.py
+├── run_agent.sh          # Backward-compatible stub → scripts/agent/run_agent.sh
+├── activate_venv.sh      # Backward-compatible stub → scripts/env/activate_venv.sh
+├── .flake8               # Backward-compatible stub → config/.flake8
+├── mypy.ini              # Backward-compatible stub → config/mypy.ini
+├── pytest.ini           # Backward-compatible stub → config/pytest.ini
 └── requirements.txt     # Dependencies
 ```
 

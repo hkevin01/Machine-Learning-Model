@@ -1,3 +1,10 @@
+# DEPRECATED: This file has been moved to config/.flake8
+# Please update your tooling to use config/.flake8 instead
+# This stub will be removed in a future version
+
+# Original configuration moved to config/.flake8
+# To use the new location: flake8 --config=config/.flake8
+
 [flake8]
 max-line-length = 120
 ignore = E203, E266, E501, W503

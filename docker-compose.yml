@@ -17,7 +17,7 @@ services:
   ml-gui:
     build:
       context: .
-      dockerfile: Dockerfile.gui
+      dockerfile: config/docker/Dockerfile.gui
     image: ml-model-gui:latest
     container_name: ml-model-gui
     environment:
@@ -33,7 +33,7 @@ services:
   ml-agent:
     build:
       context: .
-      dockerfile: Dockerfile.gui
+      dockerfile: config/docker/Dockerfile.gui
     image: ml-model-agent:latest
     container_name: ml-model-agent
     environment:

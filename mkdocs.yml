@@ -1,0 +1,87 @@
+site_name: Machine Learning Model Framework
+site_description: An intelligent ML workflow framework with Agent Mode and traditional GUI
+site_author: Kevin
+site_url: https://hkevin01.github.io/Machine-Learning-Model
+
+repo_name: hkevin01/Machine-Learning-Model
+repo_url: https://github.com/hkevin01/Machine-Learning-Model
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - mermaid2:
+      arguments:
+        theme: |
+          ^(JSON.parse(__md_get("__palette").index == 1)) ?
+          'dark' : 'light'
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+    - Agent Mode: getting-started/agent-mode.md
+    - GUI Mode: getting-started/gui-mode.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Agent Workflow: architecture/agent-workflow.md
+    - GUI Components: architecture/gui-components.md
+    - Data Pipeline: architecture/data-pipeline.md
+  - User Guide:
+    - Data Preparation: user-guide/data-preparation.md
+    - Model Training: user-guide/model-training.md
+    - Evaluation: user-guide/evaluation.md
+    - Deployment: user-guide/deployment.md
+  - Development:
+    - Contributing: development/contributing.md
+    - Testing: development/testing.md
+    - Docker Setup: development/docker-setup.md
+    - CI/CD: development/ci-cd.md
+  - API Reference:
+    - Core: api/core.md
+    - GUI: api/gui.md
+    - Models: api/models.md
+    - Utils: api/utils.md
+  - Tutorials:
+    - Supervised Learning: tutorials/supervised.md
+    - Unsupervised Learning: tutorials/unsupervised.md
+    - Semi-Supervised: tutorials/semi-supervised.md
+  - Reports: reports/
+  - Changelog: CHANGELOG.md

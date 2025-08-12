@@ -1,0 +1,37 @@
+# Move Dockerfile.gui to config/docker/
+FROM python:3.11-slim AS base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    QT_X11_NO_MITSHM=1
+
+# System dependencies for PyQt6, X11, and common scientific libs
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libx11-6 libxext6 libxrender1 libxkbcommon0 libxkbcommon-x11-0 \
+    libxcb1 libxi6 libxfixes3 libxrandr2 libxcomposite1 libxtst6 \
+    libgl1 libgl1-mesa-glx libglib2.0-0 libnss3 libfontconfig1 \
+    xauth ca-certificates git curl tini && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG USERNAME=appuser
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g ${GID} ${USERNAME} && useradd -m -u ${UID} -g ${GID} ${USERNAME}
+
+WORKDIR /app
+
+# Copy only requirements first for better layer caching
+COPY requirements.txt requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Copy the rest of the project
+COPY . .
+
+RUN chmod +x run_gui.py || true
+
+USER ${USERNAME}
+
+ENTRYPOINT ["/usr/bin/tini","--"]
+CMD ["python","run_gui.py"]

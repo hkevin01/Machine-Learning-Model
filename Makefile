@@ -1,24 +1,35 @@
-.PHONY: help install install-dev test lint format type-check clean build gui agent
+.PHONY: help install install-dev test lint format type-check clean build gui agent docs compile-deps monitor
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+compile-deps:  ## Compile requirements from .in files
+	pip-compile requirements.in
+	pip-compile requirements-dev.in
+
 install:  ## Install production dependencies
+	pip install -r requirements.txt
 	pip install -e .
 
 install-dev:  ## Install development dependencies
-	pip install -e ".[dev]"
 	pip install -r requirements-dev.txt
+	pip install -e .
 	pre-commit install
 
 test:  ## Run tests
-	pytest tests/ -v --cov=src --cov-report=term-missing
+	pytest --config-file=config/dev/pytest.ini tests/ -v --cov=src --cov-report=term-missing
 
 test-fast:  ## Run tests without coverage
-	pytest tests/ -v
+	pytest --config-file=config/dev/pytest.ini tests/ -v
+
+test-gui:  ## Run GUI tests (requires X11)
+	pytest --config-file=config/dev/pytest.ini tests/gui -v -m "gui"
+
+test-agent:  ## Run Agent Mode tests
+	pytest --config-file=config/dev/pytest.ini tests/agent -v -m "agent"
 
 lint:  ## Run linting
-	flake8 src tests
+	flake8 --config=config/dev/.flake8 src tests
 	pylint src
 
 format:  ## Format code
@@ -26,13 +37,22 @@ format:  ## Format code
 	isort src tests
 
 type-check:  ## Run type checking
-	mypy src
+	mypy --config-file=config/dev/mypy.ini src
 
 check:  ## Run all checks (lint, type-check, test)
 	$(MAKE) format
 	$(MAKE) lint
 	$(MAKE) type-check
 	$(MAKE) test
+
+monitor:  ## Generate monitoring reports
+	python scripts/monitoring/generate_reports.py --use-sample-data
+
+docs:  ## Build documentation
+	mkdocs build
+
+docs-serve:  ## Serve documentation locally
+	mkdocs serve
 
 clean:  ## Clean build artifacts
 	rm -rf build/
@@ -42,6 +62,7 @@ clean:  ## Clean build artifacts
 	rm -rf htmlcov/
 	rm -rf .pytest_cache/
 	rm -rf .mypy_cache/
+	rm -rf site/
 	find . -type d -name __pycache__ -delete
 	find . -type f -name "*.pyc" -delete
 
@@ -57,8 +78,8 @@ agent:  ## Run Agent Mode in Docker container
 venv:  ## Create virtual environment
 	python -m venv venv
 	@echo "Virtual environment created. Activate with:"
-	@echo "source venv/bin/activate  # Linux/Mac"
-	@echo "venv\Scripts\activate     # Windows"
+	@printf '%s\n' "source venv/bin/activate  # Linux/Mac"
+	@printf '%s\n' "venv\\Scripts\\activate     # Windows"
 
 setup:  ## Full project setup
 	$(MAKE) venv

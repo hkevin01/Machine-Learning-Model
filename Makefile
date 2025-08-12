@@ -3,9 +3,14 @@
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-compile-deps:  ## Compile requirements from .in files
-	pip-compile requirements.in
-	pip-compile requirements-dev.in
+compile-deps:  ## Compile (pin) requirements from .in files (bootstraps pip-tools if absent)
+	@echo "[deps] Ensuring pip-tools is installed..."
+	@python -c "import piptools" 2>/dev/null || python -m pip install --upgrade pip && python -m pip install pip-tools
+	@echo "[deps] Compiling base requirements -> requirements.txt"
+	pip-compile --resolver=backtracking --quiet --output-file requirements.txt requirements.in
+	@echo "[deps] Compiling dev requirements -> requirements-dev.txt"
+	pip-compile --resolver=backtracking --quiet --output-file requirements-dev.txt requirements-dev.in
+	@echo "[deps] Done. To apply updated pins: pip install -r requirements.txt -r requirements-dev.txt"
 
 install:  ## Install production dependencies
 	pip install -r requirements.txt

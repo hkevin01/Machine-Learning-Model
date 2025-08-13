@@ -128,20 +128,40 @@ def _create_enhanced_result(
         "data_info": data_info,
     }
 
-    # Generate performance summary
+    # Generate performance summary & performance category
     if success:
         if task == "classification" and "accuracy" in metrics:
             acc = metrics["accuracy"]
-            performance_summary = f"Classification accuracy: {acc:.1%} ({'Good' if acc > 0.8 else 'Fair' if acc > 0.6 else 'Poor'} performance)"
+            base_acc = additional_info.get("baseline_accuracy") if additional_info else None
+            acc_improve = None
+            if base_acc is not None and base_acc > 0:
+                acc_improve = acc - base_acc
+                metrics.setdefault("baseline_accuracy", base_acc)
+                metrics.setdefault("accuracy_improvement", acc_improve)
+            category = "Excellent" if acc > 0.9 else "Good" if acc > 0.75 else "Fair" if acc > 0.6 else "Poor"
+            performance_summary = f"Accuracy: {acc:.1%} ({category}); " + (
+                f"Baseline: {base_acc:.1%}; Δ: {acc_improve:.1%}" if acc_improve is not None else "Baseline: n/a"
+            )
+            metrics.setdefault("performance_category", category)
         elif task == "regression" and "r2" in metrics:
             r2 = metrics["r2"]
-            performance_summary = f"R² score: {r2:.3f} ({'Excellent' if r2 > 0.9 else 'Good' if r2 > 0.7 else 'Fair' if r2 > 0.5 else 'Poor'} fit)"
+            category = (
+                "Excellent" if r2 > 0.9 else "Good" if r2 > 0.75 else "Fair" if r2 > 0.5 else "Poor"
+            )
+            performance_summary = f"R²: {r2:.3f} ({category})"
+            metrics.setdefault("performance_category", category)
         elif task == "regression" and "mse" in metrics:
             mse = metrics["mse"]
-            performance_summary = f"MSE: {mse:.4f} ({'Low' if mse < 1.0 else 'Moderate' if mse < 10.0 else 'High'} error)"
+            category = "Low error" if mse < 1.0 else "Moderate error" if mse < 10.0 else "High error"
+            performance_summary = f"MSE: {mse:.4f} ({category})"
+            metrics.setdefault("performance_category", category)
         elif "silhouette" in metrics:
             sil = metrics["silhouette"]
-            performance_summary = f"Silhouette score: {sil:.3f} ({'Excellent' if sil > 0.7 else 'Good' if sil > 0.5 else 'Fair' if sil > 0.25 else 'Poor'} clustering)"
+            category = (
+                "Excellent" if sil > 0.7 else "Good" if sil > 0.5 else "Fair" if sil > 0.25 else "Poor"
+            )
+            performance_summary = f"Silhouette: {sil:.3f} ({category})"
+            metrics.setdefault("performance_category", category)
         else:
             performance_summary = "Algorithm completed successfully"
     else:
@@ -272,6 +292,9 @@ def _create_enhanced_result(
             level = "warn"
         warning_levels.append((level, w))
 
+    # Append runtime & summary to details for richer display
+    if success:
+        details = details.rstrip() + f"\nRuntime: {execution_time:.3f}s\nSummary: {performance_summary}"
     return RunResult(
         algorithm=algorithm,
         task=task,
@@ -299,9 +322,10 @@ def _linear_regression_metrics(X: np.ndarray, y: np.ndarray, start_time: float, 
     r2 = 1.0 - (ss_res / ss_tot if ss_tot != 0 else 0.0)
     rmse = float(np.sqrt(mse))
     mae = float(np.mean(np.abs(preds - y)))
+    resid_std = float(np.std(preds - y))
     details = (
         "✅ Linear Regression Results:\n"
-        f"MSE: {mse:.4f} | RMSE: {rmse:.4f} | MAE: {mae:.4f} | R²: {r2:.4f}\n"
+        f"MSE: {mse:.4f} | RMSE: {rmse:.4f} | MAE: {mae:.4f} | ResidualStd: {resid_std:.4f} | R²: {r2:.4f}\n"
         f"Samples: {X.shape[0]} | Features: {X.shape[1]}\n"
         "Interpretation: MSE is mean squared error; RMSE gives typical error magnitude in original units; MAE is average absolute deviation; R² shows variance explained (1=perfect, 0=baseline)."
     )
@@ -324,7 +348,7 @@ def _linear_regression_metrics(X: np.ndarray, y: np.ndarray, start_time: float, 
         task="regression",
         success=True,
         details=details,
-    metrics={"mse": mse, "r2": r2, "rmse": rmse, "mae": mae},
+        metrics={"mse": mse, "r2": r2, "rmse": rmse, "mae": mae, "residual_std": resid_std},
         warnings=[],
         start_time=start_time,
         model_params=model_params,
@@ -555,7 +579,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                         "class_distribution": class_counts,
                         "baseline_accuracy": baseline_acc,
                     }
-                    metrics_extra = {"accuracy": acc}
+                    metrics_extra = {"accuracy": acc, "baseline_accuracy": baseline_acc}
                     if logloss is not None:
                         metrics_extra["log_loss"] = logloss
                     if roc_auc is not None:
@@ -625,7 +649,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                         "class_distribution": class_counts,
                         "baseline_accuracy": baseline_acc,
                     }
-                    metrics_extra = {"accuracy": acc}
+                    metrics_extra = {"accuracy": acc, "baseline_accuracy": baseline_acc}
                     if logloss is not None:
                         metrics_extra["log_loss"] = logloss
                     if roc_auc is not None:
@@ -673,12 +697,16 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                         "target_mean": float(np.mean(y)),
                         "target_std": float(np.std(y)),
                     }
+                    # Extend with additional residual metrics
+                    rmse = float(np.sqrt(mse))
+                    mae = float(np.mean(np.abs(preds - y)))
+                    resid_std = float(np.std(preds - y))
                     return _create_enhanced_result(
                         algorithm=algorithm,
                         task=task,
                         success=True,
                         details=details,
-                        metrics={"mse": mse, "r2": r2},
+                        metrics={"mse": mse, "r2": r2, "rmse": rmse, "mae": mae, "residual_std": resid_std},
                         warnings=[],
                         start_time=start_time,
                         model_params=model_params,
@@ -730,7 +758,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                     task=task,
                     success=True,
                     details=details,
-                    metrics={"accuracy": acc},
+                    metrics={"accuracy": acc, "baseline_accuracy": baseline_acc},
                     warnings=[],
                     start_time=start_time,
                     model_params=model_params,
@@ -743,9 +771,11 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
             preds = model.predict(X_scaled)
             mse = float(np.mean((preds - y) ** 2))
             mae = float(np.mean(np.abs(preds - y)))
+            rmse = float(np.sqrt(mse))
+            resid_std = float(np.std(preds - y))
             details = (
                 "✅ Support Vector Machine Regression Results:\n"
-                f"MSE: {mse:.4f} | MAE: {mae:.4f}\n"
+                f"MSE: {mse:.4f} | RMSE: {rmse:.4f} | MAE: {mae:.4f} | ResidualStd: {resid_std:.4f}\n"
                 f"Samples: {spec.n_samples} | Features: {spec.n_features} (scaled)\n"
                 "Interpretation: MSE/MAE capture squared vs absolute error; tuning C, epsilon and kernel parameters can adjust bias-variance and margin sensitivity."
             )
@@ -770,7 +800,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                 task=task,
                 success=True,
                 details=details,
-                metrics={"mse": mse, "mae": mae},
+                metrics={"mse": mse, "mae": mae, "rmse": rmse, "residual_std": resid_std},
                 warnings=[],
                 start_time=start_time,
                 model_params=model_params,
@@ -837,7 +867,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                     task=task,
                     success=True,
                     details=details,
-                    metrics={"accuracy": acc},
+                    metrics={"accuracy": acc, "baseline_accuracy": baseline_acc},
                     warnings=[],
                     start_time=start_time,
                     model_params=model_params,
@@ -847,9 +877,11 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
             # Default case: XGBoost Regression
             mse = float(np.mean((preds - y) ** 2))
             mae = float(np.mean(np.abs(preds - y)))
+            rmse = float(np.sqrt(mse))
+            resid_std = float(np.std(preds - y))
             details = (
                 "✅ XGBoost Regression Results:\n"
-                f"MSE: {mse:.4f} | MAE: {mae:.4f}\n"
+                f"MSE: {mse:.4f} | RMSE: {rmse:.4f} | MAE: {mae:.4f} | ResidualStd: {resid_std:.4f}\n"
                 f"Samples: {spec.n_samples} | Features: {spec.n_features}\n"
                 "Interpretation: Boosting sequentially fits residuals; watch for overfitting (training error << validation). Use subsample/colsample_bytree to reduce variance."
             )
@@ -875,7 +907,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                 task=task,
                 success=True,
                 details=details,
-                metrics={"mse": mse, "mae": mae},
+                metrics={"mse": mse, "mae": mae, "rmse": rmse, "residual_std": resid_std},
                 warnings=[],
                 start_time=start_time,
                 model_params=model_params,
@@ -920,7 +952,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                     task=task,
                     success=True,
                     details=details,
-                    metrics={"accuracy": acc},
+                    metrics={"accuracy": acc, "baseline_accuracy": baseline_acc},
                     warnings=[],
                     start_time=start_time,
                     model_params=model_params,
@@ -933,9 +965,11 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
             preds = model.predict(X)
             mse = float(np.mean((preds - y) ** 2))
             mae = float(np.mean(np.abs(preds - y)))
+            rmse = float(np.sqrt(mse))
+            resid_std = float(np.std(preds - y))
             details = (
                 "✅ Neural Network Regression Results:\n"
-                f"MSE: {mse:.4f} | MAE: {mae:.4f}\n"
+                f"MSE: {mse:.4f} | RMSE: {rmse:.4f} | MAE: {mae:.4f} | ResidualStd: {resid_std:.4f}\n"
                 f"Samples: {spec.n_samples} | Features: {spec.n_features}\n"
                 "Interpretation: Neural network approximates nonlinear function; examine learning curves and consider regularization or architecture changes for bias/variance issues."
             )
@@ -960,7 +994,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                 task=task,
                 success=True,
                 details=details,
-                metrics={"mse": mse, "mae": mae},
+                metrics={"mse": mse, "mae": mae, "rmse": rmse, "residual_std": resid_std},
                 warnings=[],
                 start_time=start_time,
                 model_params=model_params,
@@ -1030,7 +1064,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                     task=task,
                     success=True,
                     details=details,
-                    metrics={"accuracy": acc},
+                    metrics={"accuracy": acc, "baseline_accuracy": baseline_acc},
                     warnings=[],
                     start_time=start_time,
                     model_params=model_params,

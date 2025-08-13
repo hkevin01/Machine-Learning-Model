@@ -7,80 +7,76 @@ from __future__ import annotations
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Any
+from typing import Any as _Any
 
 import numpy as np
 
 from .data_synthesizer import SyntheticDataSpec, generate_synthetic_data
 
-HAVE_SVM = True
-HAVE_XGBOOST = True
-HAVE_NN = True
-HAVE_UNSUPERVISED = True
-
+# Custom implementations (fallback to simple stubs if module missing)
+DecisionTreeClassifier: _Any
+DecisionTreeRegressor: _Any
+RandomForestClassifier: _Any
+RandomForestRegressor: _Any
 try:  # Custom implementations
     from machine_learning_model.supervised.decision_tree import (
-        DecisionTreeClassifier,
-        DecisionTreeRegressor,
+        DecisionTreeClassifier as _DTClf,
+    )
+    from machine_learning_model.supervised.decision_tree import (
+        DecisionTreeRegressor as _DTReg,
     )
     from machine_learning_model.supervised.random_forest import (
-        RandomForestClassifier,
-        RandomForestRegressor,
+        RandomForestClassifier as _RFClf,
     )
-except Exception:  # pragma: no cover
-
-    class DecisionTreeClassifier:  # type: ignore
-        def fit(self, X, y):
-            pass
-
-        def predict(self, X):
-            return np.zeros(len(X))
-
-    class DecisionTreeRegressor:  # type: ignore
-        def fit(self, X, y):
-            pass
-
-        def predict(self, X):
-            return np.zeros(len(X))
-
-    class RandomForestClassifier:  # type: ignore
-        def __init__(self, n_estimators=25):
-            pass
-
-        def fit(self, X, y):
-            pass
+    from machine_learning_model.supervised.random_forest import (
+        RandomForestRegressor as _RFReg,
+    )
+    DecisionTreeClassifier = _DTClf
+    DecisionTreeRegressor = _DTReg
+    RandomForestClassifier = _RFClf
+    RandomForestRegressor = _RFReg
+except ImportError:  # pragma: no cover
+    class _DTClfStub:
+        def fit(self, X, y) -> None:
+            return None
 
         def predict(self, X):
             return np.zeros(len(X))
 
-    class RandomForestRegressor:  # type: ignore
-        def __init__(self, n_estimators=25):
-            pass
-
-        def fit(self, X, y):
-            pass
+    class _DTRegStub:
+        def fit(self, X, y) -> None:
+            return None
 
         def predict(self, X):
             return np.zeros(len(X))
 
-try:
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.svm import SVC, SVR
-except Exception:
-    HAVE_SVM = False
-try:
-    from xgboost import XGBClassifier, XGBRegressor  # type: ignore
-except Exception:
-    HAVE_XGBOOST = False
-try:
-    from sklearn.neural_network import MLPClassifier, MLPRegressor
-except Exception:
-    HAVE_NN = False
-try:
-    from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
-    from sklearn.decomposition import PCA
-    from sklearn.metrics import silhouette_score
-except Exception:
-    HAVE_UNSUPERVISED = False
+    class _RFClfStub:
+        def __init__(self, n_estimators: int = 25) -> None:
+            self.n_estimators = n_estimators
+
+        def fit(self, X, y) -> None:
+            return None
+
+        def predict(self, X):
+            return np.zeros(len(X))
+
+    class _RFRegStub:
+        def __init__(self, n_estimators: int = 25) -> None:
+            self.n_estimators = n_estimators
+
+        def fit(self, X, y) -> None:
+            return None
+
+        def predict(self, X):
+            return np.zeros(len(X))
+
+    DecisionTreeClassifier = _DTClfStub  # type: ignore[assignment]
+    DecisionTreeRegressor = _DTRegStub  # type: ignore[assignment]
+    RandomForestClassifier = _RFClfStub  # type: ignore[assignment]
+    RandomForestRegressor = _RFRegStub  # type: ignore[assignment]
+
+# Note: All optional third-party imports (sklearn, xgboost) are imported lazily within
+# the branches that need them. This keeps static analyzers quiet when deps are absent.
 
 
 @dataclass(slots=True)
@@ -229,7 +225,7 @@ def _create_enhanced_result(
                     "min_cluster_size": min(counts.values()),
                     "max_cluster_size": max(counts.values()),
                 }
-    except Exception:  # pragma: no cover
+    except (KeyError, TypeError, ValueError):  # pragma: no cover
         pass
 
     # Model diagnostics extraction
@@ -339,8 +335,8 @@ def _linear_regression_metrics(X: np.ndarray, y: np.ndarray, start_time: float, 
         "n_samples": spec.n_samples,
         "n_features": spec.n_features,
         "feature_names": [f"feature_{i}" for i in range(X.shape[1])],
-    "target_mean": float(np.mean(y)),
-    "target_std": float(np.std(y)),
+        "target_mean": float(np.mean(y)),
+        "target_std": float(np.std(y)),
     }
 
     return _create_enhanced_result(
@@ -363,16 +359,202 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
     start_time = time.time()
     try:
         X, y = generate_synthetic_data(spec)
+        # ---------------------- Semi-Supervised Algorithms -----------------------------
+        if algorithm in {"Label Propagation", "Self-Training", "Co-Training", "Semi-Supervised SVM"}:
+            if task != "classification":
+                return RunResult(algorithm, task, False, f"❌ {algorithm} currently supports classification only", {}, [])
+            assert y is not None
+
+            rng = np.random.default_rng(42)
+            n_samples = X.shape[0]
+            labeled_fraction = 0.2 if n_samples > 10 else 0.5
+            n_initial = max(2, int(labeled_fraction * n_samples))
+            initial_indices = rng.choice(n_samples, size=n_initial, replace=False)
+            unlabeled_indices = np.setdiff1d(np.arange(n_samples), initial_indices)
+            y_masked = np.full_like(y, fill_value=-1)
+            y_masked[initial_indices] = y[initial_indices]
+
+            def _finish(preds: np.ndarray, pseudo_added: int, iterations: int, desc: str) -> RunResult:
+                acc = float(np.mean(preds == y))
+                acc_labeled = float(np.mean(preds[initial_indices] == y[initial_indices])) if len(initial_indices) else 0.0
+                acc_unlabeled = float(np.mean(preds[unlabeled_indices] == y[unlabeled_indices])) if len(unlabeled_indices) else 0.0
+                majority = int(np.bincount(y[initial_indices]).argmax()) if len(initial_indices) else int(np.bincount(y).argmax())
+                baseline_acc = float(np.mean(y == majority))
+                details = (
+                    f"✅ {algorithm} Semi-Supervised Results:\n"
+                    f"Overall Acc: {acc:.3f} | Labeled Acc: {acc_labeled:.3f} | Unlabeled Acc: {acc_unlabeled:.3f}\n"
+                    f"Initial labeled: {len(initial_indices)} | Unlabeled: {len(unlabeled_indices)} | Pseudo-labels: {pseudo_added} | Iterations: {iterations}\n"
+                    + desc
+                )
+                model_params = {"initial_labeled_fraction": labeled_fraction, "iterations": iterations}
+                add_info = {
+                    "n_samples": n_samples,
+                    "n_features": X.shape[1],
+                    "n_initial_labeled": len(initial_indices),
+                    "n_unlabeled": len(unlabeled_indices),
+                    "pseudo_labels_added": pseudo_added,
+                    "baseline_accuracy": baseline_acc,
+                }
+                return _create_enhanced_result(
+                    algorithm=algorithm,
+                    task=task,
+                    success=True,
+                    details=details,
+                    metrics={
+                        "accuracy": acc,
+                        "accuracy_labeled": acc_labeled,
+                        "accuracy_unlabeled": acc_unlabeled,
+                        "baseline_accuracy": baseline_acc,
+                        "pseudo_labels": pseudo_added,
+                    },
+                    warnings=[],
+                    start_time=start_time,
+                    model_params=model_params,
+                    additional_info=add_info,
+                )
+
+            if algorithm == "Label Propagation":
+                try:
+                    from sklearn.semi_supervised import LabelPropagation  # type: ignore
+                except ImportError as e:
+                    return RunResult(algorithm, task, False, "❌ scikit-learn not available for Label Propagation", {}, [repr(e)])
+                model = LabelPropagation(kernel="rbf", gamma=20)
+                model.fit(X, y_masked)
+                preds = model.transduction_
+                pseudo_added = int(np.sum(preds[unlabeled_indices] != -1))
+                return _finish(preds, pseudo_added, 1, "Graph-based diffusion with RBF kernel.")
+
+            if algorithm == "Self-Training":
+                try:
+                    from sklearn.linear_model import LogisticRegression  # type: ignore
+                    from sklearn.semi_supervised import (
+                        SelfTrainingClassifier,  # type: ignore
+                    )
+                except ImportError as e:
+                    return RunResult(algorithm, task, False, "❌ scikit-learn not available for Self-Training", {}, [repr(e)])
+                wrapper = SelfTrainingClassifier(LogisticRegression(max_iter=300), threshold=0.8, verbose=False)
+                wrapper.fit(X, y_masked)
+                preds = wrapper.predict(X)
+                iterations = int(getattr(wrapper, "n_iter_", 1))
+                pseudo_added = int(np.sum(preds[unlabeled_indices] != -1))
+                return _finish(preds, pseudo_added, iterations, "Iterative self-labeling using LogisticRegression base.")
+
+            if algorithm == "Co-Training":
+                try:
+                    from sklearn.linear_model import LogisticRegression  # type: ignore
+                    from sklearn.neighbors import KNeighborsClassifier  # type: ignore
+                except ImportError as e:
+                    return RunResult(algorithm, task, False, "❌ scikit-learn not available for Co-Training", {}, [repr(e)])
+                if X.shape[1] < 2:
+                    return RunResult(algorithm, task, False, "❌ Co-Training requires >=2 features", {}, [])
+                mid = X.shape[1] // 2
+                view1, view2 = X[:, :mid], X[:, mid:]
+                clf1 = LogisticRegression(max_iter=300)
+                clf2 = KNeighborsClassifier(n_neighbors=5)
+                labeled_set = set(initial_indices.tolist())
+                y_work = y_masked.copy()
+                added_total = 0
+                max_iter = 5
+                last_iter = 0
+                for it in range(1, max_iter + 1):
+                    mask = np.array([i in labeled_set for i in range(n_samples)])
+                    clf1.fit(view1[mask], y_work[mask])
+                    clf2.fit(view2[mask], y_work[mask])
+                    unlabeled = [i for i in range(n_samples) if i not in labeled_set]
+                    if not unlabeled:
+                        break
+                    probs1 = np.asarray(clf1.predict_proba(view1[unlabeled]))
+                    probs2 = np.asarray(clf2.predict_proba(view2[unlabeled]))
+                    conf1 = probs1.max(axis=1)
+                    conf2 = probs2.max(axis=1)
+                    k = min(5, len(unlabeled))
+                    pick1 = np.argsort(-conf1)[:k]
+                    pick2 = np.argsort(-conf2)[:k]
+                    threshold = 0.9
+                    newly_added = 0
+                    for picks, probs in [(pick1, probs1), (pick2, probs2)]:
+                        for local_i in picks:
+                            global_i = unlabeled[local_i]
+                            if global_i in labeled_set:
+                                continue
+                            if probs[local_i].max() >= threshold:
+                                y_work[global_i] = int(np.argmax(probs[local_i]))
+                                labeled_set.add(global_i)
+                                newly_added += 1
+                    added_total += newly_added
+                    last_iter = it
+                    if newly_added == 0:
+                        break
+                final_mask = np.array([i in labeled_set for i in range(n_samples)])
+                from sklearn.linear_model import (
+                    LogisticRegression as LRFinal,  # type: ignore
+                )
+                final_clf = LRFinal(max_iter=300)
+                final_clf.fit(X[final_mask], y_work[final_mask])
+                final_preds = final_clf.predict(X)
+                return _finish(final_preds, added_total, last_iter, "Dual-view exchange between LogisticRegression and KNN (prototype).")
+
+            if algorithm == "Semi-Supervised SVM":
+                try:
+                    from sklearn.svm import SVC  # type: ignore
+                    y_work = y_masked.copy()
+                    labeled_mask = y_work != -1
+                    max_iter = 5
+                    added_total = 0
+                    last_iter = 0
+                    for it in range(1, max_iter + 1):
+                        clf = SVC(probability=True, kernel="rbf", gamma="scale")
+                        clf.fit(X[labeled_mask], y_work[labeled_mask])
+                        unlabeled_mask = ~labeled_mask
+                        if not np.any(unlabeled_mask):
+                            break
+                        probs = clf.predict_proba(X[unlabeled_mask])
+                        conf = probs.max(axis=1)
+                        threshold = 0.95
+                        high_conf = np.where(conf >= threshold)[0]
+                        if len(high_conf) == 0:
+                            break
+                        unlabeled_idx_full = np.where(unlabeled_mask)[0]
+                        for local_i in high_conf:
+                            global_i = unlabeled_idx_full[local_i]
+                            y_work[global_i] = int(np.argmax(probs[local_i]))
+                            labeled_mask[global_i] = True
+                        added_total += len(high_conf)
+                        last_iter = it
+                    final_clf = SVC(kernel="rbf", gamma="scale")
+                    final_clf.fit(X[labeled_mask], y_work[labeled_mask])
+                    final_preds = final_clf.predict(X)
+                    return _finish(final_preds, added_total, last_iter, "Iterative high-confidence pseudo-labeling with SVC (TSVM placeholder).")
+                except Exception as e:  # pragma: no cover
+                    return RunResult(algorithm, task, False, f"❌ Error or missing dependency: {e}", {}, [repr(e)])
+
+        # ---------------------- Unsupervised Algorithms -------------------------------
         if algorithm in {
             "K-Means Clustering",
             "DBSCAN",
             "Principal Component Analysis",
             "Hierarchical Clustering",
         }:
-            if not HAVE_UNSUPERVISED:
-                return RunResult(algorithm, task, False, "❌ scikit-learn not available for Unsupervised algorithms", {}, [])
-            scaler = StandardScaler() if HAVE_SVM else None
-            X_scaled = scaler.fit_transform(X) if scaler else X
+            try:
+                from sklearn.cluster import (  # type: ignore
+                    DBSCAN,
+                    AgglomerativeClustering,
+                    KMeans,
+                )
+                from sklearn.decomposition import PCA  # type: ignore
+                from sklearn.metrics import silhouette_score  # type: ignore
+                from sklearn.preprocessing import StandardScaler  # type: ignore
+            except ImportError as e:
+                return RunResult(
+                    algorithm,
+                    task,
+                    False,
+                    "❌ scikit-learn not available for Unsupervised algorithms",
+                    {},
+                    [repr(e)],
+                )
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
             if algorithm == "K-Means Clustering":
                 k = 3
                 model = KMeans(n_clusters=k, random_state=42, n_init=10)
@@ -536,8 +718,11 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                 # Treat 'Linear Regression' in classification context as a Logistic Regression model
                 try:
                     from sklearn.linear_model import LogisticRegression  # type: ignore
-                    from sklearn.metrics import log_loss as sk_log_loss
-                    from sklearn.metrics import roc_auc_score as sk_roc_auc
+                    from sklearn.metrics import log_loss as sk_log_loss  # type: ignore
+                    from sklearn.metrics import (
+                        roc_auc_score as sk_roc_auc,  # type: ignore
+                    )
+                    from sklearn.preprocessing import StandardScaler  # type: ignore
                     scaler = StandardScaler()
                     X_scaled = scaler.fit_transform(X)
                     model = LogisticRegression(max_iter=300, random_state=42)
@@ -553,7 +738,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                             logloss = float(sk_log_loss(y, proba))
                             if proba.shape[1] == 2:  # binary
                                 roc_auc = float(sk_roc_auc(y, proba[:, 1]))
-                    except Exception:  # pragma: no cover
+                    except (AttributeError, ValueError):  # pragma: no cover
                         pass
                     details = (
                         "✅ Linear (Logistic) Regression Classification Results:\n"
@@ -606,8 +791,11 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                 # Standard logistic regression path (reuse logic akin to linear->classification above)
                 try:
                     from sklearn.linear_model import LogisticRegression  # type: ignore
-                    from sklearn.metrics import log_loss as sk_log_loss
-                    from sklearn.metrics import roc_auc_score as sk_roc_auc
+                    from sklearn.metrics import log_loss as sk_log_loss  # type: ignore
+                    from sklearn.metrics import (
+                        roc_auc_score as sk_roc_auc,  # type: ignore
+                    )
+                    from sklearn.preprocessing import StandardScaler  # type: ignore
                     scaler = StandardScaler()
                     X_scaled = scaler.fit_transform(X)
                     model = LogisticRegression(max_iter=300, random_state=42)
@@ -623,7 +811,7 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                             logloss = float(sk_log_loss(y, proba))
                             if proba.shape[1] == 2:
                                 roc_auc = float(sk_roc_auc(y, proba[:, 1]))
-                    except Exception:  # pragma: no cover
+                    except (AttributeError, ValueError):  # pragma: no cover
                         pass
                     details = (
                         "✅ Logistic Regression Classification Results:\n"
@@ -718,8 +906,11 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                         f"❌ Failed Logistic Regression regression adaptation: {exc}", {}, []
                     )
         if algorithm == "Support Vector Machine":
-            if not HAVE_SVM:
-                return RunResult(algorithm, task, False, "❌ scikit-learn not available for SVM", {}, [])
+            try:
+                from sklearn.preprocessing import StandardScaler  # type: ignore
+                from sklearn.svm import SVC, SVR  # type: ignore
+            except ImportError as e:
+                return RunResult(algorithm, task, False, "❌ scikit-learn not available for SVM", {}, [repr(e)])
             scaler = StandardScaler()
             X_scaled = scaler.fit_transform(X)
             if task == "classification":
@@ -807,9 +998,11 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                 additional_info=additional_info,
             )
         if algorithm == "XGBoost":
-            if not HAVE_XGBOOST:
-                return RunResult(algorithm, task, False, "❌ XGBoost library not available", {}, [])
             assert y is not None
+            try:
+                from xgboost import XGBClassifier, XGBRegressor  # type: ignore
+            except ImportError as e:
+                return RunResult(algorithm, task, False, "❌ XGBoost library not available", {}, [repr(e)])
             if task == "classification":
                 model = XGBClassifier(
                     n_estimators=100,
@@ -914,9 +1107,14 @@ def run_algorithm(algorithm: str, task: str, spec: SyntheticDataSpec | None = No
                 additional_info=additional_info,
             )
         if algorithm == "Neural Networks":
-            if not HAVE_NN:
-                return RunResult(algorithm, task, False, "❌ scikit-learn not available for Neural Networks", {}, [])
             assert y is not None
+            try:
+                from sklearn.neural_network import (  # type: ignore
+                    MLPClassifier,
+                    MLPRegressor,
+                )
+            except ImportError as e:
+                return RunResult(algorithm, task, False, "❌ scikit-learn not available for Neural Networks", {}, [repr(e)])
             if task == "classification":
                 model = MLPClassifier(hidden_layer_sizes=(32, 16), activation="relu", max_iter=300, random_state=42)
                 model.fit(X, y)

@@ -189,3 +189,11 @@ models/legacy/MODELS/
 *.pyo
 # Large model files
 Learning/
+
+# Docker build artifacts
+docker-compose.override.yml
+
+# Test output directories
+test-output/
+test-outputs/
+htmlcov/

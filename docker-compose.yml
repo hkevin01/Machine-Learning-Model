@@ -1,70 +1,72 @@
-version: '3.8'
+# =============================================================================
+# Machine Learning Model — Docker Compose
+#
+# Services
+#   app   – CLI / batch ML pipeline (default)
+#   test  – pytest suite (CI)
+#   gui   – PyQt6 desktop GUI via X11 forwarding
+#
+# Usage
+#   docker compose up app          # run CLI
+#   docker compose run --rm test   # run tests
+#   docker compose up gui          # launch GUI (requires X11 on host)
+# =============================================================================
 
 services:
+
+  # ---------------------------------------------------------------------------
+  # app — production CLI image
+  # ---------------------------------------------------------------------------
   app:
-    build: .
-    container_name: app
-    volumes:
-      - .:/app
-      - /app/venv  # Exclude venv from mount
-    environment:
-      - PYTHONPATH=/app
-      - LOG_LEVEL=INFO
-    depends_on:
-      - redis
-      - postgres
-
-  ml-gui:
     build:
       context: .
-      dockerfile: config/docker/Dockerfile.gui
+      dockerfile: Dockerfile
+      target: app
+    image: ml-model:latest
+    container_name: ml-app
+    environment:
+      - PYTHONPATH=/app/src
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    env_file:
+      - .env.example
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+
+  # ---------------------------------------------------------------------------
+  # test — run the full pytest suite
+  # ---------------------------------------------------------------------------
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    image: ml-model-test:latest
+    container_name: ml-test
+    environment:
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./tests:/app/tests
+      - ./src:/app/src
+
+  # ---------------------------------------------------------------------------
+  # gui — PyQt6 desktop window forwarded via X11
+  # ---------------------------------------------------------------------------
+  gui:
+    build:
+      context: .
+      dockerfile: Dockerfile.gui
     image: ml-model-gui:latest
-    container_name: ml-model-gui
+    container_name: ml-gui
     environment:
-      - DISPLAY=${DISPLAY}
-      - QT_SCALE_FACTOR=1
+      - DISPLAY=${DISPLAY:-:0}
+      - QT_SCALE_FACTOR=${QT_SCALE_FACTOR:-1}
       - QT_X11_NO_MITSHM=1
+      - PYTHONPATH=/app/src
     volumes:
-      - ./:/app:rw
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ./data:/app/data
+      - ./models:/app/models
     stdin_open: true
     tty: true
-
-  ml-agent:
-    build:
-      context: .
-      dockerfile: config/docker/Dockerfile.gui
-    image: ml-model-agent:latest
-    container_name: ml-model-agent
-    environment:
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=INFO
-    volumes:
-      - ./:/app:rw
-    command: ["bash","-lc","./run_agent.sh"]
-    stdin_open: true
-    tty: true
-
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
-    environment:
-      POSTGRES_DB: app_db
-      POSTGRES_USER: app_user
-      POSTGRES_PASSWORD: app_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-
-volumes:
-  postgres_data:
-  redis_data:
+    network_mode: host

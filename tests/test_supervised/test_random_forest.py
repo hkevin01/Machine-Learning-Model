@@ -61,8 +61,8 @@ class TestRandomForestClassifier:
     def test_predict_proba(self):
         """Test probability prediction."""
         X, y = make_classification(
-            n_samples=100, n_features=5, n_classes=3,
-            n_informative=4, random_state=42
+            n_samples=100, n_features=6, n_classes=3,
+            n_informative=4, n_redundant=1, random_state=42
         )
         
         clf = RandomForestClassifier(n_estimators=10, random_state=42)

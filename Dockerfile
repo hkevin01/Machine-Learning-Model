@@ -1,43 +1,54 @@
-# Use Python 3.11 slim image
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1.7
+# =============================================================================
+# Machine Learning Model — multi-stage Dockerfile
+#
+# Stages
+#   deps  – install Python dependencies (shared cache layer)
+#   test  – run the full pytest suite (CI target)
+#   app   – lean production image (CLI / batch ML)
+# =============================================================================
 
-# Set environment variables
+# ── deps ──────────────────────────────────────────────────────────────────────
+FROM python:3.11-slim AS deps
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
-        git \
+    && apt-get install -y --no-install-recommends build-essential git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency files
-COPY requirements.txt .
-COPY requirements-dev.txt .
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt -r requirements-dev.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# ── test ──────────────────────────────────────────────────────────────────────
+FROM deps AS test
 
-# Copy project
 COPY . .
+RUN pip install -e . --no-deps
 
-# Install project in editable mode
-RUN pip install -e .
+ENV PYTHONPATH=/app/src
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
+# Run tests; exit code propagated to docker build / CI
+CMD ["python", "-m", "pytest", "tests/", \
+     "--ignore=tests/gui", \
+     "-q", "--no-cov", "--tb=short"]
+
+# ── app ───────────────────────────────────────────────────────────────────────
+FROM deps AS app
+
+COPY . .
+RUN pip install -e . --no-deps \
+    && groupadd -r appuser \
+    && useradd -r -g appuser appuser \
+    && chown -R appuser:appuser /app
+
 USER appuser
+ENV PYTHONPATH=/app/src
 
-# Expose port (if needed)
-# EXPOSE 8000
-
-# Command to run the application
-CMD ["machine_learning_model"]
+CMD ["machine-learning-model"]

@@ -50,11 +50,16 @@ class DataPreprocessor:
         Error:    ValueError on unknown strategy.
         """
         if strategy == "mean":
-            return df.fillna(df.mean())
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            fill_values = {col: df[col].mean() for col in numeric_cols}
+            return df.fillna(fill_values)
         elif strategy == "median":
-            return df.fillna(df.median())
+            numeric_cols = df.select_dtypes(include=[np.number]).columns
+            fill_values = {col: df[col].median() for col in numeric_cols}
+            return df.fillna(fill_values)
         elif strategy == "mode":
-            return df.fillna(df.mode().iloc[0])
+            fill_values = {col: df[col].mode().iloc[0] for col in df.columns if not df[col].mode().empty}
+            return df.fillna(fill_values)
         elif strategy == "drop":
             return df.dropna()
         else:

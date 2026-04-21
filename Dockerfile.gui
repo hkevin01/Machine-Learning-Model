@@ -1,8 +1,8 @@
-#############################################
-# Dockerfile.gui - Containerized PyQt6 GUI  #
-#############################################
 # syntax=docker/dockerfile:1.7
-FROM python:3.11-slim AS base
+# =============================================================================
+# Machine Learning Model — GUI image (PyQt6 + X11 forwarding)
+# =============================================================================
+FROM python:3.11-slim AS gui
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -10,49 +10,34 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     QT_X11_NO_MITSHM=1
 
-# System dependencies for PyQt6, X11, and common scientific libs
+# X11 and Qt system libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libx11-6 libxext6 libxrender1 libxkbcommon0 libxkbcommon-x11-0 \
-    libxcb1 libxi6 libxfixes3 libxrandr2 libxcomposite1 libxtst6 \
-    libgl1 libgl1-mesa-glx libglib2.0-0 libnss3 libfontconfig1 \
-    libgles2-mesa-dev libegl1-mesa libegl1 \
-    libdbus-1-3 libdbus-1-dev dbus-x11 dbus \
-    libxcb-xinerama0 libxcb-cursor0 libxcb-keysyms1 \
+    libx11-6 libxext6 libxrender1 \
+    libxkbcommon0 libxkbcommon-x11-0 \
+    libxcb1 libxcb-xinerama0 libxcb-cursor0 libxcb-keysyms1 \
     libxcb-icccm4 libxcb-image0 libxcb-render-util0 \
     libxcb-shape0 libxcb-sync1 libxcb-xfixes0 \
-    fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-noto-color-emoji \
-    xauth ca-certificates git curl tini python3-tk tk || \
-    (apt-get update --allow-releaseinfo-change && apt-get install -y --no-install-recommends \
-    libx11-6 libxext6 libxrender1 libxkbcommon0 libxkbcommon-x11-0 \
-    libxcb1 libxi6 libxfixes3 libxrandr2 libxcomposite1 libxtst6 \
-    libgl1 libgl1-mesa-glx libglib2.0-0 libnss3 libfontconfig1 \
-    libgles2-mesa-dev libegl1-mesa libegl1 \
-    libdbus-1-3 libdbus-1-dev dbus-x11 dbus \
-    libxcb-xinerama0 libxcb-cursor0 libxcb-keysyms1 \
-    libxcb-icccm4 libxcb-image0 libxcb-render-util0 \
-    libxcb-shape0 libxcb-sync1 libxcb-xfixes0 \
-    fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-noto-color-emoji \
-    xauth ca-certificates git curl tini python3-tk tk) && \
-    rm -rf /var/lib/apt/lists/*
+    libxi6 libxfixes3 libxrandr2 libxcomposite1 libxtst6 \
+    libgl1 libglib2.0-0 libnss3 libfontconfig1 libegl1 \
+    libdbus-1-3 dbus-x11 \
+    fonts-dejavu-core xauth tini \
+    && rm -rf /var/lib/apt/lists/*
 
-ARG USERNAME=appuser
 ARG UID=1000
 ARG GID=1000
-RUN groupadd -g ${GID} ${USERNAME} && useradd -m -u ${UID} -g ${GID} ${USERNAME}
+RUN groupadd -g ${GID} appuser && useradd -m -u ${UID} -g ${GID} appuser
 
 WORKDIR /app
 
-# Copy only requirements first for better layer caching
-COPY requirements.txt requirements.txt
+COPY requirements.txt ./
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy the rest of the project
 COPY . .
+RUN pip install -e . --no-deps
 
-# Ensure launcher is executable (new organized path)
-RUN chmod +x scripts/gui/run_gui_pyqt6_only.py || true
+ENV PYTHONPATH=/app/src
 
-USER ${USERNAME}
+USER appuser
 
-ENTRYPOINT ["/usr/bin/tini","--"]
-CMD ["python","scripts/gui/run_gui_pyqt6_only.py"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["python", "scripts/gui/run_gui_pyqt6_only.py"]

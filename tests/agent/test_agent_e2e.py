@@ -10,13 +10,11 @@ pytestmark = pytest.mark.agent
 
 @pytest.mark.agent
 def test_agent_import():
-    """Test that agent components can be imported."""
-    try:
-        # Test core agent imports
-        from machine_learning_model import main_app
-        assert main_app is not None
-    except ImportError as e:
-        pytest.skip(f"Agent components not available: {e}")
+    """Test that core agent/workflow components can be imported."""
+    from machine_learning_model.workflow.ml_agent import MLAgent
+    from machine_learning_model.workflow.ml_workflow import MLWorkflow
+    assert MLAgent is not None
+    assert MLWorkflow is not None
 
 
 @pytest.mark.agent
@@ -121,23 +119,12 @@ def test_mini_pipeline_e2e():
 
 
 @pytest.mark.agent
-def test_run_agent_script():
-    """Test that run_agent.sh can be found and is executable."""
-    script_path = Path("run_agent.sh")
-    
-    if not script_path.exists():
-        pytest.skip("run_agent.sh not found")
-    
-    # Check if file is executable (Unix-like systems)
-    if os.name != 'nt':  # Not Windows
-        assert os.access(script_path, os.X_OK), "run_agent.sh is not executable"
-    
-    # Read script content
-    with open(script_path, 'r') as f:
-        content = f.read()
-    
-    # Basic validation
-    assert len(content) > 0, "run_agent.sh is empty"
+def test_run_entrypoint_script():
+    """Test that the unified run.sh entry point exists and is executable."""
+    script_path = Path("run.sh")
+    assert script_path.exists(), "run.sh not found — expected at project root"
+    if os.name != 'nt':
+        assert os.access(script_path, os.X_OK), "run.sh is not executable"
     assert "#!/bin/bash" in content or "#!/usr/bin/env bash" in content
 
 

@@ -1,8 +1,15 @@
 """
-ML Agent - Intelligent Machine Learning Workflow Assistant
-
-This module provides an AI agent that guides users through the complete
-machine learning pipeline, providing recommendations and automating repetitive tasks.
+Module: workflow.ml_agent
+Purpose: Intelligent orchestrator for the 13-step ML pipeline.
+         Manages workflow state, step progression, dependency validation,
+         and context-aware recommendations. Persists state to disk so
+         sessions survive interruption and can be resumed.
+Rationale: Centralising pipeline logic in an agent object decouples GUI,
+           CLI, and test harnesses from the step-execution detail.
+Assumptions: workspace_dir is writable. State is serialised to JSON so
+             the format is human-readable and version-control friendly.
+Failure Modes: IOError on state save/load is logged but does not crash
+               the agent — the session continues without persistence.
 """
 
 import json
@@ -43,9 +50,21 @@ class WorkflowStepType(Enum):
     MONITORING = "monitoring"
 
 
-@dataclass
 class WorkflowStep:
-    """Represents a single step in the ML workflow."""
+    """
+    Purpose:    Value object representing a single pipeline stage.
+    Fields:     name                   — human-readable step label.
+                step_type              — WorkflowStepType enum tag.
+                description            — one-sentence step purpose.
+                status                 — lifecycle state (NOT_STARTED →
+                                         IN_PROGRESS → COMPLETED | FAILED | SKIPPED).
+                progress               — 0.0–1.0 completion fraction.
+                dependencies           — list of step names that must be
+                                         COMPLETED before this step can start.
+                estimated_time_minutes — advisory time estimate for the UI.
+    Side-effect: start(), complete(), fail(), skip() update status and
+                 timestamps and emit a log entry.
+    """
     
     name: str
     step_type: WorkflowStepType
@@ -87,14 +106,14 @@ class WorkflowStep:
 
 class MLAgent:
     """
-    Intelligent ML Agent that guides users through the machine learning workflow.
-    
-    The agent provides:
-    - Step-by-step guidance through the ML pipeline
-    - Intelligent recommendations based on data characteristics
-    - Automated execution of routine tasks
-    - Progress tracking and state management
-    - Error handling and recovery suggestions
+    Purpose:    Top-level agent that owns the ordered list of WorkflowSteps,
+                drives state transitions, emits recommendations, and
+                serialises/deserialises progress to JSON.
+    Inputs:     project_name  — label used as a prefix for persisted files.
+                workspace_dir — directory where state JSON is written.
+                auto_save     — persist state after every transition.
+    Invariant:  current_step_index always points to the first non-COMPLETED
+                step or to len(steps) when all steps are done.
     """
     
     def __init__(self, project_name: str = "ml_project", workspace_dir: str = ".", auto_save: bool = True):
@@ -218,10 +237,9 @@ class MLAgent:
     
     def get_progress(self) -> Tuple[int, int, float]:
         """
-        Get overall workflow progress.
-        
-        Returns:
-            Tuple of (completed_steps, total_steps, progress_percentage)
+        Purpose:  Report overall pipeline completion as a triple.
+        Returns:  (completed_steps, total_steps, progress_pct)
+                  where progress_pct is in [0.0, 100.0].
         """
         completed_steps = sum(1 for step in self.steps if step.status == WorkflowStepStatus.COMPLETED)
         total_steps = len(self.steps)
@@ -229,7 +247,13 @@ class MLAgent:
         return completed_steps, total_steps, progress_percentage
     
     def get_recommendations(self) -> List[str]:
-        """Get AI-generated recommendations for the current step."""
+        """
+        Purpose:    Generate context-aware guidance strings for the current
+                    pipeline step. Each recommendation is a plain-English
+                    action item targeted at the step's typical challenges.
+        Returns:    List of recommendation strings; never empty.
+                    Returns a completion message when all steps are done.
+        """
         current_step = self.get_current_step()
         if not current_step:
             return ["Workflow completed! Consider starting a new project."]
@@ -272,10 +296,12 @@ class MLAgent:
     
     def advance_to_next_step(self) -> bool:
         """
-        Advance to the next workflow step.
-        
-        Returns:
-            True if advanced successfully, False if at end or prerequisites not met
+        Purpose:   Move current_step_index forward by one if the current
+                   step is COMPLETED.
+        Returns:   True when successfully advanced.
+                   False when at the final step or the current step is
+                   not yet COMPLETED (guard against premature advancement).
+        Side-effect: Persists state when auto_save is True.
         """
         current_step = self.get_current_step()
         if current_step and current_step.status != WorkflowStepStatus.COMPLETED:

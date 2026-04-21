@@ -1,4 +1,15 @@
-"""Data preprocessing utilities for machine learning pipelines."""
+"""
+Module: data.preprocessors
+Purpose: Stateful data preprocessing for ML pipelines.
+         Provides fit-once / transform-many semantics for scaling,
+         encoding, imputation, outlier detection, and train-test splits.
+         A single DataPreprocessor instance should be created per experiment
+         and reused so fitted scalers/encoders are consistent across splits.
+Assumptions: Input DataFrames contain only numeric columns for scaling
+             operations. Categorical encoding targets 1-D label arrays.
+Failure Modes: ValueError on unknown strategy/method names.
+               TypeError if non-DataFrame inputs are passed to numeric ops.
+"""
 
 from typing import Optional, Tuple, Union
 
@@ -9,17 +20,35 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 
 
 class DataPreprocessor:
-    """Class for preprocessing data for machine learning models."""
+    """
+    Purpose:    Stateful transformer that wraps common preprocessing steps.
+                Maintains fitted scaler and label-encoder references so
+                the same transformations can be applied to validation and
+                test splits without data leakage.
+    Constraints: One instance per experiment; do not share across projects.
+    """
 
     def __init__(self):
-        """Initialize the preprocessor."""
+        """
+        Purpose:   Initialise with no fitted state.
+        Postcond:  self.scaler and self.label_encoder are None; the first
+                   call to normalize_features or encode_categorical_variables
+                   triggers fitting.
+        """
         self.scaler = None
         self.label_encoder = None
 
     def handle_missing_values(
         self, df: pd.DataFrame, strategy: str = "mean"
     ) -> pd.DataFrame:
-        """Handle missing values in the dataset."""
+        """
+        Purpose:  Impute or drop missing values in a DataFrame.
+        Inputs:   df       — source DataFrame, may contain NaN.
+                  strategy — 'mean' | 'median' | 'mode' | 'drop'.
+        Returns:  New DataFrame with NaN handled per strategy; original
+                  is not mutated.
+        Error:    ValueError on unknown strategy.
+        """
         if strategy == "mean":
             return df.fillna(df.mean())
         elif strategy == "median":
@@ -34,7 +63,18 @@ class DataPreprocessor:
     def normalize_features(
         self, X: pd.DataFrame, method: str = "standard"
     ) -> pd.DataFrame:
-        """Normalize features using specified method."""
+        """
+        Purpose:    Scale numeric features to a standard range.
+                    Fits the scaler on first call; subsequent calls apply
+                    the already-fitted transform (prevents data leakage).
+        Inputs:     X      — numeric feature DataFrame.
+                    method — 'standard' (zero-mean unit-variance) |
+                             'minmax' (0-1 range).
+        Returns:    Scaled DataFrame preserving original column names and index.
+        Precond:    X must contain only numeric columns.
+        Side-effect: Mutates self.scaler on first call.
+        Error:      ValueError on unknown method.
+        """
         if method == "standard":
             if self.scaler is None:
                 self.scaler = StandardScaler()
@@ -48,18 +88,28 @@ class DataPreprocessor:
             else:
                 scaled_data = self.scaler.transform(X)
         else:
-            raise ValueError(f"Unknown normalization method: { method}")
+            raise ValueError(f"Unknown normalization method: {method}")
 
         return pd.DataFrame(scaled_data, columns=X.columns, index=X.index)
 
     def encode_categorical_variables(self, y: pd.Series) -> Tuple[np.ndarray, dict]:
+        """
+        Purpose:    Ordinal-encode a categorical target Series.
+                    Fits the LabelEncoder on first call; subsequent calls
+                    apply the fitted mapping (prevents unseen-class errors
+                    on test data when labels are consistent).
+        Inputs:     y — 1-D pandas Series of string or integer class labels.
+        Returns:    (encoded_array, mapping_dict) where mapping_dict maps
+                    original class name → integer code.
+        Side-effect: Mutates self.label_encoder on first call.
+        """
         if self.label_encoder is None:
             self.label_encoder = LabelEncoder()
             encoded_y = self.label_encoder.fit_transform(y)
         else:
             encoded_y = self.label_encoder.transform(y)
 
-        # Create mapping dictionary
+        # Build human-readable class→code mapping for downstream display
         mapping = dict(
             zip(
                 self.label_encoder.classes_,
@@ -83,7 +133,15 @@ class DataPreprocessor:
         Union[pd.Series, np.ndarray],
         Union[pd.Series, np.ndarray],
     ]:
-        """Split data into training and testing sets."""
+        """
+        Purpose:  Partition features and labels into training and test sets.
+        Inputs:   X            — feature DataFrame.
+                  y            — label array or Series, same length as X.
+                  test_size    — fraction for test set; range (0, 1).
+                  random_state — seed for reproducibility.
+        Returns:  (X_train, X_test, y_train, y_test) tuple.
+        Precond:  len(X) == len(y), test_size ∈ (0, 1).
+        """
         return tuple(
             train_test_split(X, y, test_size=test_size, random_state=random_state)
         )
@@ -91,7 +149,15 @@ class DataPreprocessor:
     def detect_outliers(
         self, X: pd.DataFrame, method: str = "iqr", threshold: float = 1.5
     ) -> pd.DataFrame:
-        """Detect outliers in the dataset."""
+        """
+        Purpose:  Produce a boolean mask identifying outlier cells.
+        Inputs:   X         — numeric DataFrame.
+                  method    — 'iqr' (interquartile range fence).
+                  threshold — IQR multiplier for fence width (default 1.5
+                              is Tukey's conventional fence).
+        Returns:  Boolean DataFrame; True where a cell is an outlier.
+        Error:    ValueError on unknown method.
+        """
         if method == "iqr":
             Q1 = X.quantile(0.25)
             Q3 = X.quantile(0.75)
@@ -99,17 +165,24 @@ class DataPreprocessor:
             outliers = (X < (Q1 - threshold * IQR)) | (X > (Q3 + threshold * IQR))
             return outliers
         else:
-            raise ValueError(f"Unknown outlier detection method: { method}")
+            raise ValueError(f"Unknown outlier detection method: {method}")
 
     def remove_outliers(
         self, df: pd.DataFrame, columns: Optional[list] = None, method: str = "iqr"
     ) -> pd.DataFrame:
-        """Remove outliers from the dataset."""
+        """
+        Purpose:  Drop rows that contain outliers in any of the target columns.
+        Inputs:   df      — source DataFrame.
+                  columns — column names to inspect; defaults to all numeric
+                            columns if None.
+                  method  — passed through to detect_outliers.
+        Returns:  Filtered DataFrame (subset of rows); original not mutated.
+        """
         if columns is None:
             columns = df.select_dtypes(include=[np.number]).columns.tolist()
 
         outliers = self.detect_outliers(df[columns], method=method)
-        # Remove rows where any column has an outlier
+        # Retain only rows where no inspected column is an outlier
         mask = ~outliers.any(axis=1)
         return df[mask]
 

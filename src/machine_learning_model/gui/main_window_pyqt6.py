@@ -1,6 +1,18 @@
 """
-Modern PyQt6-based GUI for Machine Learning Framework Explorer.
-Provides categorized interface for exploring supervised, unsupervised, and semi-supervised algorithms.
+Module: gui.main_window_pyqt6
+Purpose: PyQt6 desktop application window for the ML Framework Explorer.
+         Provides a categorised algorithm browser, dataset selector, radio-
+         button task-type chooser (classification / regression), and a
+         result pane that renders enhanced algorithm output including
+         execution timing, model parameters, and recommendations.
+Rationale: PyQt6 was chosen over Tkinter for its richer widget set, native
+           look-and-feel on all platforms, and built-in signals/slots for
+           safe cross-thread GUI updates.
+Assumptions: A display server (X11 or Wayland on Linux; GDI on Windows) is
+             available. Headless use requires a virtual framebuffer (Xvfb).
+Failure Modes: Import stubs stand in for algorithm classes when the src
+               package is not installed, so the GUI still launches in
+               demo environments with only PyQt6 present.
 """
 import sys
 from typing import Any, Dict

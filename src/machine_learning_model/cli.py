@@ -1,5 +1,15 @@
 """
-Command Line Interface for machine_learning_model
+Module: cli
+Purpose: Typer-based command-line interface for the machine_learning_model package.
+         Exposes 'run' and 'info' subcommands with --version, --verbose,
+         and --quiet global flags.
+Rationale: Separating CLI wiring from business logic (main.py) keeps the
+           entry point thin, auto-generates --help text, and enables
+           isolated testing of each command.
+Constraints: Requires typer and rich; both are declared in pyproject.toml
+             core dependencies so they are always available.
+Failure Modes: Non-zero exit codes (typer.Exit(code=1)) propagate to the
+               shell so scripts and CI systems can detect failures.
 """
 
 from typing import Optional

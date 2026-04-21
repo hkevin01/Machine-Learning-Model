@@ -1,5 +1,16 @@
 """
-Decision Tree implementation for classification and regression.
+Module: supervised.decision_tree
+Purpose: Pure-Python implementation of the CART decision tree algorithm
+         supporting both classification (Gini/Entropy impurity) and
+         regression (MSE/MAE impurity). Provides a scikit-learn–compatible
+         fit/predict interface and integrates with MLflow tracking.
+Rationale: A first-principles implementation makes the learning mechanics
+           transparent for educational use while remaining functional for
+           real datasets.
+Constraints: Not optimised for very large datasets (>100 k rows) — use
+             scikit-learn's Cython-accelerated tree for production at scale.
+Failure Modes: RecursionError for pathologically deep trees on datasets
+               with zero variance; guarded by max_depth stopping criterion.
 """
 
 from abc import ABC, abstractmethod
@@ -22,7 +33,11 @@ except Exception:  # pragma: no cover
 
 
 class Node:
-    """Node class for decision tree structure."""
+    """
+    Purpose:  Single node in the binary decision tree.
+              Internal nodes store a split rule (feature + threshold);
+              leaf nodes store a scalar prediction value.
+    """
 
     def __init__(self, feature: Optional[int] = None, threshold: Optional[float] = None,
                  left=None, right=None, value: Optional[float] = None):
@@ -38,13 +53,28 @@ class Node:
 
 
 class BaseDecisionTree(ABC):
-    """Base class for decision tree algorithms."""
+    """
+    Purpose:    Abstract base implementing the shared CART tree-building
+                algorithm. Subclasses provide task-specific impurity
+                measures and leaf-value calculations.
+    Inputs:     max_depth          — maximum tree depth; guards against
+                                     overfitting and stack overflow.
+                min_samples_split  — minimum samples required to split.
+                min_samples_leaf   — minimum samples in a leaf node.
+                max_features       — number of features to consider at each
+                                     split; None means consider all features.
+                                     Used by Random Forest to inject feature
+                                     subsampling at the tree level.
+                random_state       — seed for reproducibility.
+    """
 
     def __init__(self, max_depth: int = 10, min_samples_split: int = 2,
-                 min_samples_leaf: int = 1, random_state: Optional[int] = None):
+                 min_samples_leaf: int = 1, max_features: Optional[int] = None,
+                 random_state: Optional[int] = None):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
         self.min_samples_leaf = min_samples_leaf
+        self.max_features = max_features  # None = use all features
         self.random_state = random_state
         self.root = None
         self.feature_importances_ = None
@@ -63,7 +93,14 @@ class BaseDecisionTree(ABC):
         pass
 
     def _information_gain(self, y: np.ndarray, left_indices: np.ndarray, right_indices: np.ndarray) -> float:
-        """Calculate information gain from a split."""
+        """
+        Purpose:  Compute the reduction in weighted impurity achieved by a
+                  candidate binary split — the core CART optimisation signal.
+        Inputs:   y             — full label array for the current node.
+                  left_indices  — row indices going to the left child.
+                  right_indices — row indices going to the right child.
+        Returns:  Non-negative float; 0.0 when either child is empty.
+        """
         n = len(y)
         n_left, n_right = len(left_indices), len(right_indices)
 
@@ -81,14 +118,29 @@ class BaseDecisionTree(ABC):
         return parent_impurity - weighted_impurity
 
     def _best_split(self, X: np.ndarray, y: np.ndarray) -> tuple:
-        """Find the best split for the given data."""
+        """
+        Purpose:  Exhaustive greedy search over all features and threshold
+                  candidates for the split that maximises information gain.
+        Inputs:   X — feature matrix (n_samples × n_features).
+                  y — label array (n_samples,).
+        Returns:  (best_feature_idx, best_threshold, best_gain) tuple.
+                  Returns (None, None, -1) when no valid split exists.
+        Complexity: O(n_features × n_unique_values × n_samples).
+        """
         best_gain = -1
         best_feature = None
         best_threshold = None
 
         n_features = X.shape[1]
 
-        for feature_idx in range(n_features):
+        # When max_features is set (e.g. injected by Random Forest), randomly
+        # select a subset of feature indices to consider at this split.
+        if self.max_features is not None and self.max_features < n_features:
+            feature_indices = np.random.choice(n_features, size=self.max_features, replace=False)
+        else:
+            feature_indices = range(n_features)
+
+        for feature_idx in feature_indices:
             feature_values = X[:, feature_idx]
             thresholds = np.unique(feature_values)
 
@@ -109,12 +161,19 @@ class BaseDecisionTree(ABC):
         return best_feature, best_threshold, best_gain
 
     def _build_tree(self, X: np.ndarray, y: np.ndarray, depth: int = 0) -> Node:
-        """Recursively build the decision tree."""
+        """
+        Purpose:   Recursively partition X/y into a binary tree via the
+                   CART algorithm until a stopping criterion is met.
+        Stopping:  depth ≥ max_depth OR n_samples < min_samples_split
+                   OR all labels are identical OR no positive-gain split
+                   exists.
+        Returns:   Root Node of the subtree; always a leaf at base case.
+        """
         n_samples, n_features = X.shape
 
-        # Check stopping criteria
+        # Check stopping criteria (max_depth=None means grow fully)
         if (
-            depth >= self.max_depth
+            (self.max_depth is not None and depth >= self.max_depth)
             or n_samples < self.min_samples_split
             or len(np.unique(y)) == 1
         ):
@@ -204,15 +263,29 @@ class BaseDecisionTree(ABC):
         return node.value
 
     def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
-        """Make predictions on new data."""
+        """
+        Purpose:  Traverse the fitted tree for every sample and return
+                  the leaf prediction value.
+        Inputs:   X — feature matrix (n_samples × n_features); accepts
+                      numpy array or pandas DataFrame.
+        Returns:  1-D numpy array of predictions (n_samples,).
+        Precond:  fit() must have been called first (self.root is set).
+        """
         if isinstance(X, pd.DataFrame):
             X = X.values
 
         predictions = np.array([self._predict_sample(x) for x in X])
         return predictions
 
-    def _calculate_feature_importances(self, X: np.ndarray, y: np.ndarray):
-        """Calculate feature importances based on information gain."""
+    def _calculate_feature_importances(self, X: np.ndarray, y: np.ndarray) -> None:
+        """
+        Purpose:    Compute a normalised importance score for each feature
+                    by accumulating weighted information-gain contributions
+                    across every split in the fitted tree.
+        Side-effect: Sets self.feature_importances_ (ndarray, shape n_features).
+                     Values sum to 1.0 after normalisation.
+        Precond:    fit() / _build_tree() must have been called first.
+        """
         n_features = X.shape[1]
         importances = np.zeros(n_features)
 
@@ -262,7 +335,14 @@ class BaseDecisionTree(ABC):
 
 
 class DecisionTreeClassifier(BaseDecisionTree):
-    """Decision Tree Classifier implementation."""
+    """
+    Purpose:  CART classifier using Gini impurity or information entropy.
+    Inputs:   criterion — 'gini' (default) or 'entropy'.
+              **kwargs  — forwarded to BaseDecisionTree.
+    Usage:    clf = DecisionTreeClassifier(criterion='gini', max_depth=5)
+              clf.fit(X_train, y_train)
+              y_pred = clf.predict(X_test)
+    """
 
     def __init__(self, criterion: str = 'gini', **kwargs):
         super().__init__(**kwargs)
@@ -316,7 +396,14 @@ class DecisionTreeClassifier(BaseDecisionTree):
 
 
 class DecisionTreeRegressor(BaseDecisionTree):
-    """Decision Tree Regressor implementation."""
+    """
+    Purpose:  CART regressor minimising MSE or MAE node impurity.
+    Inputs:   criterion — 'mse' | 'squared_error' (alias) | 'mae'.
+              **kwargs  — forwarded to BaseDecisionTree.
+    Usage:    reg = DecisionTreeRegressor(criterion='mse', max_depth=8)
+              reg.fit(X_train, y_train)
+              y_pred = reg.predict(X_test)
+    """
 
     def __init__(self, criterion: str = 'mse', **kwargs):
         super().__init__(**kwargs)

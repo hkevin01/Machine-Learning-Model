@@ -1,5 +1,15 @@
 """
-Main module for machine_learning_model
+Module: main
+Purpose: Application entry point for the machine_learning_model package.
+         Configures the loguru logger (stderr + rotating file), sets up
+         the logs/ directory, and delegates to application logic.
+Rationale: Keeping startup/logging concerns separate from business logic
+           makes both independently testable and the entry point small.
+Assumptions: The process working directory is the project root so that
+             the relative logs/ path resolves correctly.
+Failure Modes: Any unhandled exception in main() is caught, logged, and
+               exits with code 1 so the process communicates failure to
+               the shell or container orchestrator.
 """
 
 import sys

@@ -188,3 +188,4 @@ models/legacy/MODELS/
 *.pyc
 *.pyo
 # Large model files
+Learning/

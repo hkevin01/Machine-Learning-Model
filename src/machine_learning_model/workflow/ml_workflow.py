@@ -1,8 +1,15 @@
 """
-ML Workflow - Complete Machine Learning Pipeline Implementation
-
-This module provides a comprehensive, step-by-step workflow for machine learning projects,
-integrating data collection through deployment with intelligent guidance and automation.
+Module: workflow.ml_workflow
+Purpose: Concrete pipeline executor that wires each WorkflowStepType to
+         its implementation. Delegates orchestration state to MLAgent and
+         focuses solely on the data-science logic for each of the 13 steps.
+Rationale: Separating execution logic (this module) from state management
+           (MLAgent) keeps each concern testable in isolation.
+Assumptions: MLAgent is fully initialised before MLWorkflow is constructed.
+             pandas, scikit-learn, matplotlib, and seaborn are installed.
+Failure Modes: Step execution returns False on unhandled exceptions, which
+               the agent records as a FAILED status without crashing the
+               overall pipeline session.
 """
 
 import logging
@@ -24,10 +31,11 @@ logger = logging.getLogger(__name__)
 
 class MLWorkflow:
     """
-    Complete Machine Learning Workflow Implementation.
-    
-    This class provides a comprehensive ML pipeline that integrates with the MLAgent
-    to provide guided, step-by-step machine learning project execution.
+    Purpose:    Concrete executor for the 13-step ML pipeline.
+                Holds live dataset references, fitted transformers, trained
+                models, and result artefacts so they are accessible across
+                step boundaries without global state.
+    Inputs:     agent — MLAgent that owns workflow state and step progression.
     """
     
     def __init__(self, agent: MLAgent):
@@ -54,8 +62,13 @@ class MLWorkflow:
         # Create workspace directories
         self._setup_workspace()
     
-    def _setup_workspace(self):
-        """Set up the workspace directory structure."""
+    def _setup_workspace(self) -> None:
+        """
+        Purpose:    Create the standard directory tree under workspace_dir
+                    so downstream steps can write artefacts without checking
+                    whether paths exist.
+        Side-effect: Creates directories on the local filesystem; idempotent.
+        """
         base_dir = self.agent.workspace_dir
         directories = [
             "data/raw",
@@ -75,13 +88,14 @@ class MLWorkflow:
     
     def execute_current_step(self, **kwargs) -> bool:
         """
-        Execute the current workflow step.
-        
-        Args:
-            **kwargs: Step-specific parameters
-            
-        Returns:
-            True if step executed successfully, False otherwise
+        Purpose:    Dispatch execution to the handler for the current step type.
+                    Marks the step as started, runs the implementation, and
+                    marks it COMPLETED or FAILED based on the return value.
+        Inputs:     **kwargs — step-specific keyword arguments forwarded to
+                               the matching _execute_* handler.
+        Returns:    True on success; False on implementation failure or
+                    unrecognised step type.
+        Side-effect: Mutates agent step status and persists state.
         """
         current_step = self.agent.get_current_step()
         if not current_step:

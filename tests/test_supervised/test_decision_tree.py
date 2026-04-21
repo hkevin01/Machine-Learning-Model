@@ -49,7 +49,9 @@ class TestDecisionTreeClassifier:
     
     def test_pandas_input(self):
         """Test with pandas DataFrame input."""
-        X, y = make_classification(n_samples=50, n_features=3, random_state=42)
+        X, y = make_classification(
+            n_samples=50, n_features=3, n_informative=2, n_redundant=1, random_state=42
+        )
         X_df = pd.DataFrame(X, columns=['feature1', 'feature2', 'feature3'])
         y_series = pd.Series(y)
         

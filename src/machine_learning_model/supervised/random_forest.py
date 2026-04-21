@@ -1,4 +1,19 @@
-"""Random Forest implementation for classification and regression."""
+"""
+Module: supervised.random_forest
+Purpose: Ensemble Random Forest algorithm for classification and regression.
+         Trains n_estimators independent CART trees on bootstrap samples
+         and aggregates their predictions by majority vote (classification)
+         or mean (regression). Supports optional out-of-bag scoring and
+         parallel tree fitting via ThreadPoolExecutor.
+Rationale: Bagging + random feature selection reduces variance compared to
+           a single decision tree without increasing bias significantly.
+Constraints: Thread-based parallelism (n_jobs > 1) benefits CPU-bound fits
+             only when the GIL is released by underlying C extensions. Pure-
+             Python tree fits will not speed up beyond n_jobs=1.
+Failure Modes: ValueError('Forest not fitted yet') if predict is called
+               before fit. MemoryError for very large n_estimators on big
+               datasets — reduce n_estimators or use subsampling.
+"""
 
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Union
@@ -22,7 +37,18 @@ except Exception:  # pragma: no cover
 
 
 class BaseRandomForest:
-    """Base class for Random Forest algorithms."""
+    """
+    Purpose:    Abstract base for Random Forest variants.
+                Encapsulates bootstrap sampling, parallel tree fitting,
+                feature-importance aggregation, and OOB scoring.
+    Inputs:     n_estimators — number of trees; more is better until
+                               diminishing returns (~100–500 typical).
+                max_depth    — per-tree depth cap; None = grow fully.
+                max_features — 'sqrt' | 'log2' | int | float fraction.
+                bootstrap    — True enables sampling with replacement.
+                oob_score    — compute out-of-bag generalisation estimate.
+                n_jobs       — parallel workers (1 = sequential).
+    """
 
     def __init__(self, n_estimators: int = 100, max_depth: Optional[int] = None,
                  min_samples_split: int = 2, min_samples_leaf: int = 1,
@@ -54,7 +80,13 @@ class BaseRandomForest:
             np.random.seed(random_state)
 
     def _get_max_features(self, n_features: int) -> int:
-        """Calculate the number of features to consider for each split."""
+        """
+        Purpose:  Resolve the max_features hyperparameter to a concrete
+                  integer count of features considered at each split.
+        Inputs:   n_features — total number of columns in X.
+        Returns:  Integer in [1, n_features].
+        Error:    ValueError on unrecognised max_features type or string.
+        """
         if isinstance(self.max_features, str):
             if self.max_features == 'sqrt':
                 return int(np.sqrt(n_features))
@@ -72,7 +104,12 @@ class BaseRandomForest:
             raise ValueError(f"Invalid max_features type: {type(self.max_features)}")
 
     def _bootstrap_sample(self, X: np.ndarray, y: np.ndarray) -> tuple:
-        """Create a bootstrap sample of the data."""
+        """
+        Purpose:  Draw a bootstrap (or full-shuffle) sample from X/y.
+        Inputs:   X, y — full training arrays.
+        Returns:  (X_sample, y_sample, bootstrap_indices) where
+                  bootstrap_indices is used later for OOB scoring.
+        """
         n_samples = X.shape[0]
 
         if self.bootstrap:
@@ -112,8 +149,13 @@ class BaseRandomForest:
         else:
             self.oob_score_ = 0.0
 
-    def _calculate_feature_importances(self):
-        """Calculate feature importances by averaging across all trees."""
+    def _calculate_feature_importances(self) -> None:
+        """
+        Purpose:    Average per-tree feature importances across the whole
+                    ensemble and normalise so they sum to 1.0.
+        Side-effect: Sets self.feature_importances_ (ndarray, n_features).
+        Precond:    self.estimators_ must be populated (post-fit).
+        """
         if not self.estimators_:
             return
 
@@ -132,8 +174,13 @@ class BaseRandomForest:
 
         self.feature_importances_ = importances
 
-    def _fit_single_tree(self, args):
-        """Fit a single tree (for parallel processing)."""
+    def _fit_single_tree(self, args) -> tuple:
+        """
+        Purpose:    Fit one decision tree on a bootstrap sample. Designed
+                    to be called by the sequential loop or ThreadPoolExecutor.
+        Inputs:     args — (X, y, tree_idx, random_state) tuple.
+        Returns:    (fitted_tree, bootstrap_indices) tuple.
+        """
         X, y, tree_idx, random_state = args
 
         # Set random state for this tree
@@ -150,7 +197,16 @@ class BaseRandomForest:
         return tree, bootstrap_indices
 
     def fit(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]):
-        """Train the Random Forest."""
+        """
+        Purpose:    Train all n_estimators trees on bootstrap samples of X/y.
+                    Logs hyperparameters and training metrics to MLflow when
+                    tracking is active.
+        Inputs:     X — feature matrix (n_samples × n_features).
+                    y — label array (n_samples,).
+        Returns:    self (fluent interface).
+        Side-effect: Populates self.estimators_, self.feature_importances_,
+                     and optionally self.oob_score_.
+        """
         # Convert inputs
         if isinstance(X, pd.DataFrame):
             X = X.values
@@ -227,7 +283,12 @@ class BaseRandomForest:
         return self
 
     def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
-        """Make predictions using the ensemble."""
+        """
+        Purpose:   Run inference across all fitted trees and aggregate results.
+        Inputs:    X — feature matrix (n_samples × n_features).
+        Returns:   1-D prediction array (n_samples,).
+        Precond:   fit() must have been called; raises ValueError otherwise.
+        """
         if isinstance(X, pd.DataFrame):
             X = X.values
 
@@ -242,7 +303,12 @@ class BaseRandomForest:
 
 
 class RandomForestClassifier(BaseRandomForest):
-    """Random Forest Classifier implementation."""
+    """
+    Purpose:  Ensemble classifier. Aggregates tree votes by majority rule.
+    Inputs:   criterion — impurity measure forwarded to each tree
+                          ('gini' | 'entropy').
+              **kwargs  — forwarded to BaseRandomForest.
+    """
 
     def __init__(self, criterion: str = 'gini', **kwargs):
         super().__init__(**kwargs)
@@ -349,5 +415,5 @@ class RandomForestRegressor(BaseRandomForest):
         """Calculate R² score for OOB evaluation."""
         ss_res = np.sum((y_true - y_pred) ** 2)
         ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
-    return 1 - (ss_res / ss_tot) if ss_tot != 0 else 0.0
+        return 1 - (ss_res / ss_tot) if ss_tot != 0 else 0.0
 

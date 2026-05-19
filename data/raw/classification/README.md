@@ -54,9 +54,9 @@ y = wine['target']
 
 ## Dataset Characteristics
 
-| Dataset | Type | Difficulty | Features | Best For |
+| <sub>Dataset</sub> | <sub>Type</sub> | <sub>Difficulty</sub> | <sub>Features</sub> | <sub>Best For</sub> |
 |---------|------|------------|----------|----------|
-| Iris | Multi-class | Beginner | Continuous | Learning basics |
-| Wine | Multi-class | Intermediate | Continuous | Feature analysis |
-| Breast Cancer | Binary | Intermediate | Continuous | Medical ML |
-| Digits | Multi-class | Advanced | Discrete | Image recognition |
+| <sub>Iris</sub> | <sub>Multi-class</sub> | <sub>Beginner</sub> | <sub>Continuous</sub> | <sub>Learning basics</sub> |
+| <sub>Wine</sub> | <sub>Multi-class</sub> | <sub>Intermediate</sub> | <sub>Continuous</sub> | <sub>Feature analysis</sub> |
+| <sub>Breast Cancer</sub> | <sub>Binary</sub> | <sub>Intermediate</sub> | <sub>Continuous</sub> | <sub>Medical ML</sub> |
+| <sub>Digits</sub> | <sub>Multi-class</sub> | <sub>Advanced</sub> | <sub>Discrete</sub> | <sub>Image recognition</sub> |

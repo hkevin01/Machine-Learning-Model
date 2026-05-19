@@ -41,9 +41,9 @@ plt.scatter(blobs['x'], blobs['y'])
 
 ## Clustering Algorithms to Try
 
-| Algorithm | Best For | Parameters |
+| <sub>Algorithm</sub> | <sub>Best For</sub> | <sub>Parameters</sub> |
 |-----------|----------|------------|
-| K-Means | Spherical clusters | n_clusters |
-| DBSCAN | Arbitrary shapes | eps, min_samples |
-| Agglomerative | Hierarchical | n_clusters, linkage |
-| Gaussian Mixture | Overlapping clusters | n_components |
+| <sub>K-Means</sub> | <sub>Spherical clusters</sub> | <sub>n_clusters</sub> |
+| <sub>DBSCAN</sub> | <sub>Arbitrary shapes</sub> | <sub>eps, min_samples</sub> |
+| <sub>Agglomerative</sub> | <sub>Hierarchical</sub> | <sub>n_clusters, linkage</sub> |
+| <sub>Gaussian Mixture</sub> | <sub>Overlapping clusters</sub> | <sub>n_components</sub> |

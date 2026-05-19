@@ -46,8 +46,8 @@ y = diabetes['target']
 
 ## Dataset Characteristics
 
-| Dataset | Samples | Features | Target Range | Difficulty |
+| <sub>Dataset</sub> | <sub>Samples</sub> | <sub>Features</sub> | <sub>Target Range</sub> | <sub>Difficulty</sub> |
 |---------|---------|----------|--------------|------------|
-| California Housing | 20,640 | 8 | $15k-$500k | Intermediate |
-| Boston Housing | 506 | 13 | $5k-$50k | Beginner |
-| Diabetes | 442 | 10 | 25-346 | Intermediate |
+| <sub>California Housing</sub> | <sub>20,640</sub> | <sub>8</sub> | <sub>$15k-$500k</sub> | <sub>Intermediate</sub> |
+| <sub>Boston Housing</sub> | <sub>506</sub> | <sub>13</sub> | <sub>$5k-$50k</sub> | <sub>Beginner</sub> |
+| <sub>Diabetes</sub> | <sub>442</sub> | <sub>10</sub> | <sub>25-346</sub> | <sub>Intermediate</sub> |

@@ -44,12 +44,12 @@ scripts/
 
 ## Quick Reference
 
-| Category | Purpose | Key Scripts |
+| <sub>Category</sub> | <sub>Purpose</sub> | <sub>Key Scripts</sub> |
 |----------|---------|-------------|
-| Development | Environment setup and project creation | setup_venv.sh, create_python_project.sh |
-| Testing | Test execution and validation | run_comprehensive_tests.sh, quick_test.sh |
-| Git Tools | Git workflow and commit management | commit_bypass.sh, fix_git_commits.sh |
-| Fixes | Issue resolution and troubleshooting | fix_isort_connection.sh, fix_precommit_issues.sh |
+| <sub>Development</sub> | <sub>Environment setup and project creation</sub> | <sub>setup_venv.sh, create_python_project.sh</sub> |
+| <sub>Testing</sub> | <sub>Test execution and validation</sub> | <sub>run_comprehensive_tests.sh, quick_test.sh</sub> |
+| <sub>Git Tools</sub> | <sub>Git workflow and commit management</sub> | <sub>commit_bypass.sh, fix_git_commits.sh</sub> |
+| <sub>Fixes</sub> | <sub>Issue resolution and troubleshooting</sub> | <sub>fix_isort_connection.sh, fix_precommit_issues.sh</sub> |
 
 ## Common Workflows
 

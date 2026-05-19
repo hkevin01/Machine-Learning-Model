@@ -55,12 +55,12 @@ df_clean.to_csv('data/processed/iris_clean.csv', index=False)
 
 ## Dataset Summary
 
-| Task | Datasets | Total Samples | Best For |
+| <sub>Task</sub> | <sub>Datasets</sub> | <sub>Total Samples</sub> | <sub>Best For</sub> |
 |------|----------|---------------|----------|
-| Classification | 4 | 2,694 | Supervised learning |
-| Regression | 3 | 21,588 | Prediction tasks |
-| Clustering | 4 | 1,140 | Unsupervised learning |
-| Text/NLP | 2 | 1,000 | Semi-supervised learning |
+| <sub>Classification</sub> | <sub>4</sub> | <sub>2,694</sub> | <sub>Supervised learning</sub> |
+| <sub>Regression</sub> | <sub>3</sub> | <sub>21,588</sub> | <sub>Prediction tasks</sub> |
+| <sub>Clustering</sub> | <sub>4</sub> | <sub>1,140</sub> | <sub>Unsupervised learning</sub> |
+| <sub>Text/NLP</sub> | <sub>2</sub> | <sub>1,000</sub> | <sub>Semi-supervised learning</sub> |
 
 ## Next Steps
 

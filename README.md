@@ -57,17 +57,17 @@ The framework pairs a PyQt6 graphical interface with an intelligent ML agent tha
 
 ## Key Features
 
-| Icon | Feature | Description | Impact | Status |
+| <sub>Icon</sub> | <sub>Feature</sub> | <sub>Description</sub> | <sub>Impact</sub> | <sub>Status</sub> |
 |------|---------|-------------|--------|--------|
-| 🤖 | **ML Agent** | AI-powered assistant navigating the 13-step pipeline | Critical | ✅ Stable |
-| 🖥️ | **PyQt6 GUI** | Interactive workflow navigator with real-time progress | High | ✅ Stable |
-| 💾 | **State Persistence** | Auto save/load of workflow progress across sessions | High | ✅ Stable |
-| 📊 | **Enhanced Results** | Execution timing, hyperparameters, smart recommendations | High | ✅ Stable |
-| 🧪 | **MLflow Tracking** | Experiment logging: params, metrics, feature importances | Medium | ✅ Stable |
-| 🗃️ | **DVC Versioning** | Reproducible data & model pipelines via DVC | Medium | ✅ Stable |
-| 🐳 | **Docker Support** | GUI-in-container with X11 forwarding and font rendering | Medium | ✅ Stable |
-| ⚙️ | **Hyperparameter Tuning** | Automated optimization integrated into pipeline | High | 🟡 Beta |
-| 📡 | **Drift Monitoring** | Continuous learning and model drift detection | Medium | 🟡 Beta |
+| <sub>🤖</sub> | <sub>**ML Agent**</sub> | <sub>AI-powered assistant navigating the 13-step pipeline</sub> | <sub>Critical</sub> | <sub>✅ Stable</sub> |
+| <sub>🖥️</sub> | <sub>**PyQt6 GUI**</sub> | <sub>Interactive workflow navigator with real-time progress</sub> | <sub>High</sub> | <sub>✅ Stable</sub> |
+| <sub>💾</sub> | <sub>**State Persistence**</sub> | <sub>Auto save/load of workflow progress across sessions</sub> | <sub>High</sub> | <sub>✅ Stable</sub> |
+| <sub>📊</sub> | <sub>**Enhanced Results**</sub> | <sub>Execution timing, hyperparameters, smart recommendations</sub> | <sub>High</sub> | <sub>✅ Stable</sub> |
+| <sub>🧪</sub> | <sub>**MLflow Tracking**</sub> | <sub>Experiment logging: params, metrics, feature importances</sub> | <sub>Medium</sub> | <sub>✅ Stable</sub> |
+| <sub>🗃️</sub> | <sub>**DVC Versioning**</sub> | <sub>Reproducible data & model pipelines via DVC</sub> | <sub>Medium</sub> | <sub>✅ Stable</sub> |
+| <sub>🐳</sub> | <sub>**Docker Support**</sub> | <sub>GUI-in-container with X11 forwarding and font rendering</sub> | <sub>Medium</sub> | <sub>✅ Stable</sub> |
+| <sub>⚙️</sub> | <sub>**Hyperparameter Tuning**</sub> | <sub>Automated optimization integrated into pipeline</sub> | <sub>High</sub> | <sub>🟡 Beta</sub> |
+| <sub>📡</sub> | <sub>**Drift Monitoring**</sub> | <sub>Continuous learning and model drift detection</sub> | <sub>Medium</sub> | <sub>🟡 Beta</sub> |
 
 **Highlights:**
 
@@ -113,16 +113,16 @@ flowchart TD
 
 ### Component Responsibilities
 
-| Component | Location | Responsibility |
+| <sub>Component</sub> | <sub>Location</sub> | <sub>Responsibility</sub> |
 |-----------|----------|----------------|
-| `ML Agent` | `workflow/ml_agent.py` | Orchestrates pipeline steps, provides context-aware recommendations |
-| `ML Workflow` | `workflow/ml_workflow.py` | State machine managing 13-step progression and persistence |
-| `Step Implementations` | `workflow/step_implementations.py` | Concrete logic for each pipeline stage |
-| `PyQt6 GUI` | `gui/main_window_pyqt6.py` | Interactive dashboard, progress tracking, real-time output |
-| `CLI` | `cli.py` | Typer-based command-line interface |
-| `Supervised` | `supervised/` | Decision Tree, Random Forest with enhanced result output |
-| `Tracking` | `tracking/` | MLflow integration for experiment logging |
-| `Visualization` | `visualization/` | matplotlib, seaborn, plotly chart generation |
+| <sub>`ML Agent`</sub> | <sub>`workflow/ml_agent.py`</sub> | <sub>Orchestrates pipeline steps, provides context-aware recommendations</sub> |
+| <sub>`ML Workflow`</sub> | <sub>`workflow/ml_workflow.py`</sub> | <sub>State machine managing 13-step progression and persistence</sub> |
+| <sub>`Step Implementations`</sub> | <sub>`workflow/step_implementations.py`</sub> | <sub>Concrete logic for each pipeline stage</sub> |
+| <sub>`PyQt6 GUI`</sub> | <sub>`gui/main_window_pyqt6.py`</sub> | <sub>Interactive dashboard, progress tracking, real-time output</sub> |
+| <sub>`CLI`</sub> | <sub>`cli.py`</sub> | <sub>Typer-based command-line interface</sub> |
+| <sub>`Supervised`</sub> | <sub>`supervised/`</sub> | <sub>Decision Tree, Random Forest with enhanced result output</sub> |
+| <sub>`Tracking`</sub> | <sub>`tracking/`</sub> | <sub>MLflow integration for experiment logging</sub> |
+| <sub>`Visualization`</sub> | <sub>`visualization/`</sub> | <sub>matplotlib, seaborn, plotly chart generation</sub> |
 
 > [!NOTE]
 > All pipeline state is automatically serialized to disk so sessions survive crashes or intentional exits. Resume by re-launching — the agent picks up where you left off.
@@ -180,13 +180,13 @@ pie title Algorithm Coverage by Category
     "Unsupervised (planned)" : 10
 ```
 
-| Category | Algorithms | Status |
+| <sub>Category</sub> | <sub>Algorithms</sub> | <sub>Status</sub> |
 |----------|-----------|--------|
-| Supervised Classification | Decision Tree, Random Forest, SVM, KNN, Logistic Regression | ✅ Stable |
-| Supervised Regression | Linear Regression, Decision Tree Regressor, Random Forest Regressor | ✅ Stable |
-| Ensemble Methods | Random Forest, XGBoost, LightGBM | ✅ Stable |
-| Unsupervised Clustering | K-Means, DBSCAN | 🟡 Planned |
-| Neural Networks | scikit-learn MLPClassifier | 🟡 Planned |
+| <sub>Supervised Classification</sub> | <sub>Decision Tree, Random Forest, SVM, KNN, Logistic Regression</sub> | <sub>✅ Stable</sub> |
+| <sub>Supervised Regression</sub> | <sub>Linear Regression, Decision Tree Regressor, Random Forest Regressor</sub> | <sub>✅ Stable</sub> |
+| <sub>Ensemble Methods</sub> | <sub>Random Forest, XGBoost, LightGBM</sub> | <sub>✅ Stable</sub> |
+| <sub>Unsupervised Clustering</sub> | <sub>K-Means, DBSCAN</sub> | <sub>🟡 Planned</sub> |
+| <sub>Neural Networks</sub> | <sub>scikit-learn MLPClassifier</sub> | <sub>🟡 Planned</sub> |
 
 <p align="right">(<a href="#top">back to top ↑</a>)</p>
 
@@ -194,18 +194,18 @@ pie title Algorithm Coverage by Category
 
 ## Technology Stack
 
-| Technology | Purpose | Why Chosen | Alternatives Considered |
+| <sub>Technology</sub> | <sub>Purpose</sub> | <sub>Why Chosen</sub> | <sub>Alternatives Considered</sub> |
 |------------|---------|------------|------------------------|
-| **Python 3.8+** | Core runtime | Ubiquitous ML ecosystem, broad OS support | Julia, R |
-| **scikit-learn** | ML algorithms | Battle-tested, consistent API, rich estimator library | PyTorch, TensorFlow |
-| **XGBoost / LightGBM** | Gradient boosting | State-of-the-art tabular performance | CatBoost |
-| **PyQt6** | Desktop GUI | Native look/feel, rich widget set, Linux/Win/Mac | Tkinter, Dear PyGui |
-| **MLflow** | Experiment tracking | Self-hostable, rich UI, scikit-learn autolog | Weights & Biases, Neptune |
-| **DVC** | Data versioning | Git-native, storage-agnostic, pipeline support | LakeFS, Pachyderm |
-| **Docker** | Containerization | Reproducible GUI environment, CI isolation | Podman |
-| **pytest** | Testing | Fixture system, coverage plugins, hypothesis | unittest |
-| **loguru** | Logging | Structured logs, rotation, zero-boilerplate | standard logging |
-| **Typer + Rich** | CLI | Auto-help generation, colored output | Click, argparse |
+| <sub>**Python 3.8+**</sub> | <sub>Core runtime</sub> | <sub>Ubiquitous ML ecosystem, broad OS support</sub> | <sub>Julia, R</sub> |
+| <sub>**scikit-learn**</sub> | <sub>ML algorithms</sub> | <sub>Battle-tested, consistent API, rich estimator library</sub> | <sub>PyTorch, TensorFlow</sub> |
+| <sub>**XGBoost / LightGBM**</sub> | <sub>Gradient boosting</sub> | <sub>State-of-the-art tabular performance</sub> | <sub>CatBoost</sub> |
+| <sub>**PyQt6**</sub> | <sub>Desktop GUI</sub> | <sub>Native look/feel, rich widget set, Linux/Win/Mac</sub> | <sub>Tkinter, Dear PyGui</sub> |
+| <sub>**MLflow**</sub> | <sub>Experiment tracking</sub> | <sub>Self-hostable, rich UI, scikit-learn autolog</sub> | <sub>Weights & Biases, Neptune</sub> |
+| <sub>**DVC**</sub> | <sub>Data versioning</sub> | <sub>Git-native, storage-agnostic, pipeline support</sub> | <sub>LakeFS, Pachyderm</sub> |
+| <sub>**Docker**</sub> | <sub>Containerization</sub> | <sub>Reproducible GUI environment, CI isolation</sub> | <sub>Podman</sub> |
+| <sub>**pytest**</sub> | <sub>Testing</sub> | <sub>Fixture system, coverage plugins, hypothesis</sub> | <sub>unittest</sub> |
+| <sub>**loguru**</sub> | <sub>Logging</sub> | <sub>Structured logs, rotation, zero-boilerplate</sub> | <sub>standard logging</sub> |
+| <sub>**Typer + Rich**</sub> | <sub>CLI</sub> | <sub>Auto-help generation, colored output</sub> | <sub>Click, argparse</sub> |
 
 <p align="right">(<a href="#top">back to top ↑</a>)</p>
 
@@ -333,21 +333,21 @@ print(f"Recommendations: {result.recommendations}")       # ["Try cross-validati
 
 The ML Agent executes a deterministic 13-step workflow. Each step is independently resumable:
 
-| # | Step | Description |
+| <sub>#</sub> | <sub>Step</sub> | <sub>Description</sub> |
 |---|------|-------------|
-| 1 | **Data Collection** | Automated dataset loading and schema validation |
-| 2 | **Data Preprocessing** | Cleaning, null handling, encoding, type coercion |
-| 3 | **Exploratory Data Analysis** | Automated statistical summary and distribution plots |
-| 4 | **Feature Engineering** | Scaling, polynomial features, selection |
-| 5 | **Data Splitting** | Stratified train / validation / test splitting |
-| 6 | **Algorithm Selection** | Automatic algorithm recommendation based on data profile |
-| 7 | **Model Training** | Multi-algorithm training with MLflow logging |
-| 8 | **Model Evaluation** | Accuracy, F1, ROC-AUC, R², MSE with visual reports |
-| 9 | **Hyperparameter Tuning** | Grid/random search with cross-validation |
-| 10 | **Model Deployment** | Pickle + ONNX export, production-ready persistence |
-| 11 | **Monitoring** | Drift detection and continuous learning hooks |
-| 12 | **Experiment Tracking** | MLflow run comparison and artifact logging |
-| 13 | **Data Versioning** | DVC pipeline for fully reproducible data & model history |
+| <sub>1</sub> | <sub>**Data Collection**</sub> | <sub>Automated dataset loading and schema validation</sub> |
+| <sub>2</sub> | <sub>**Data Preprocessing**</sub> | <sub>Cleaning, null handling, encoding, type coercion</sub> |
+| <sub>3</sub> | <sub>**Exploratory Data Analysis**</sub> | <sub>Automated statistical summary and distribution plots</sub> |
+| <sub>4</sub> | <sub>**Feature Engineering**</sub> | <sub>Scaling, polynomial features, selection</sub> |
+| <sub>5</sub> | <sub>**Data Splitting**</sub> | <sub>Stratified train / validation / test splitting</sub> |
+| <sub>6</sub> | <sub>**Algorithm Selection**</sub> | <sub>Automatic algorithm recommendation based on data profile</sub> |
+| <sub>7</sub> | <sub>**Model Training**</sub> | <sub>Multi-algorithm training with MLflow logging</sub> |
+| <sub>8</sub> | <sub>**Model Evaluation**</sub> | <sub>Accuracy, F1, ROC-AUC, R², MSE with visual reports</sub> |
+| <sub>9</sub> | <sub>**Hyperparameter Tuning**</sub> | <sub>Grid/random search with cross-validation</sub> |
+| <sub>10</sub> | <sub>**Model Deployment**</sub> | <sub>Pickle + ONNX export, production-ready persistence</sub> |
+| <sub>11</sub> | <sub>**Monitoring**</sub> | <sub>Drift detection and continuous learning hooks</sub> |
+| <sub>12</sub> | <sub>**Experiment Tracking**</sub> | <sub>MLflow run comparison and artifact logging</sub> |
+| <sub>13</sub> | <sub>**Data Versioning**</sub> | <sub>DVC pipeline for fully reproducible data & model history</sub> |
 
 ### 📊 Enhanced Algorithm Results
 
@@ -449,13 +449,13 @@ gantt
         REST API / model serving      :         x3, 2026-08-01, 2026-12-01
 ```
 
-| Phase | Goals | Target | Status |
+| <sub>Phase</sub> | <sub>Goals</sub> | <sub>Target</sub> | <sub>Status</sub> |
 |-------|-------|--------|--------|
-| **Foundation** | Core pipeline, Agent Mode, PyQt6 GUI | Q2 2025 | ✅ Complete |
-| **Enhancement** | Enhanced results, Docker, MLflow/DVC | Q1 2026 | ✅ Complete |
-| **Tuning** | Hyperparameter engine, drift monitoring | Q2 2026 | 🟡 In Progress |
-| **Expansion** | Unsupervised algorithms, neural nets | Q3 2026 | ⭕ Planned |
-| **Serving** | REST API, model serving, cloud export | Q4 2026 | ⭕ Planned |
+| <sub>**Foundation**</sub> | <sub>Core pipeline, Agent Mode, PyQt6 GUI</sub> | <sub>Q2 2025</sub> | <sub>✅ Complete</sub> |
+| <sub>**Enhancement**</sub> | <sub>Enhanced results, Docker, MLflow/DVC</sub> | <sub>Q1 2026</sub> | <sub>✅ Complete</sub> |
+| <sub>**Tuning**</sub> | <sub>Hyperparameter engine, drift monitoring</sub> | <sub>Q2 2026</sub> | <sub>🟡 In Progress</sub> |
+| <sub>**Expansion**</sub> | <sub>Unsupervised algorithms, neural nets</sub> | <sub>Q3 2026</sub> | <sub>⭕ Planned</sub> |
+| <sub>**Serving**</sub> | <sub>REST API, model serving, cloud export</sub> | <sub>Q4 2026</sub> | <sub>⭕ Planned</sub> |
 
 <p align="right">(<a href="#top">back to top ↑</a>)</p>
 
@@ -463,9 +463,9 @@ gantt
 
 ## Development Status
 
-| Version | Stability | Test Coverage | Known Limitations |
+| <sub>Version</sub> | <sub>Stability</sub> | <sub>Test Coverage</sub> | <sub>Known Limitations</sub> |
 |---------|-----------|--------------|-------------------|
-| 0.1.0 | Alpha | Growing | macOS untested, neural nets planned |
+| <sub>0.1.0</sub> | <sub>Alpha</sub> | <sub>Growing</sub> | <sub>macOS untested, neural nets planned</sub> |
 
 ### Testing
 
@@ -485,16 +485,16 @@ python -m pytest tests/test_platform_compatibility.py -v
 
 **Development Tools:**
 
-| Tool | Purpose |
+| <sub>Tool</sub> | <sub>Purpose</sub> |
 |------|---------|
-| `pytest` + `pytest-cov` | Test runner and coverage |
-| `black` | Code formatting |
-| `isort` | Import ordering |
-| `flake8` | Linting |
-| `mypy` | Static type checking |
-| `ruff` | Fast linting |
-| `pre-commit` | Git hook automation |
-| `commitizen` | Conventional commits |
+| <sub>`pytest` + `pytest-cov`</sub> | <sub>Test runner and coverage</sub> |
+| <sub>`black`</sub> | <sub>Code formatting</sub> |
+| <sub>`isort`</sub> | <sub>Import ordering</sub> |
+| <sub>`flake8`</sub> | <sub>Linting</sub> |
+| <sub>`mypy`</sub> | <sub>Static type checking</sub> |
+| <sub>`ruff`</sub> | <sub>Fast linting</sub> |
+| <sub>`pre-commit`</sub> | <sub>Git hook automation</sub> |
+| <sub>`commitizen`</sub> | <sub>Conventional commits</sub> |
 
 <p align="right">(<a href="#top">back to top ↑</a>)</p>
 
@@ -502,11 +502,11 @@ python -m pytest tests/test_platform_compatibility.py -v
 
 ## Platform Support
 
-| Platform | Support Level | Notes |
+| <sub>Platform</sub> | <sub>Support Level</sub> | <sub>Notes</sub> |
 |----------|--------------|-------|
-| ✅ Linux (Ubuntu 18.04+) | Full | Primary development target |
-| ✅ Windows 10/11 | Full | Batch scripts provided |
-| ⚠️ macOS | Basic | Untested — use Linux scripts |
+| <sub>✅ Linux (Ubuntu 18.04+)</sub> | <sub>Full</sub> | <sub>Primary development target</sub> |
+| <sub>✅ Windows 10/11</sub> | <sub>Full</sub> | <sub>Batch scripts provided</sub> |
+| <sub>⚠️ macOS</sub> | <sub>Basic</sub> | <sub>Untested — use Linux scripts</sub> |
 
 ---
 
@@ -536,12 +536,12 @@ python -m pytest tests/test_platform_compatibility.py -v
 
 ### Branch Naming
 
-| Type | Pattern | Example |
+| <sub>Type</sub> | <sub>Pattern</sub> | <sub>Example</sub> |
 |------|---------|---------|
-| Feature | `feat/*` | `feat/add-kmeans` |
-| Bug fix | `fix/*` | `fix/workflow-resume` |
-| Documentation | `docs/*` | `docs/update-readme` |
-| Chore | `chore/*` | `chore/bump-deps` |
+| <sub>Feature</sub> | <sub>`feat/*`</sub> | <sub>`feat/add-kmeans`</sub> |
+| <sub>Bug fix</sub> | <sub>`fix/*`</sub> | <sub>`fix/workflow-resume`</sub> |
+| <sub>Documentation</sub> | <sub>`docs/*`</sub> | <sub>`docs/update-readme`</sub> |
+| <sub>Chore</sub> | <sub>`chore/*`</sub> | <sub>`chore/bump-deps`</sub> |
 
 ### Commit Format
 
